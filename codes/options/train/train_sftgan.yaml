@@ -1,0 +1,36 @@
+datasets:
+  train: {HR_size: 96, batch_size: 16, dataroot_HR: /mnt/SSD/xtwang/BasicSR_datasets/OST/train/img,
+    dataroot_HR_bg: /mnt/SSD/xtwang/BasicSR_datasets/DIV2K800/DIV2K800_sub, dataroot_LR: null,
+    mode: LRHRseg_bg, n_workers: 8, name: OST, subset_file: null, use_flip: true,
+    use_rot: false, use_shuffle: true}
+  val: {dataroot_HR: /mnt/SSD/xtwang/BasicSR_datasets/OST/val/img, dataroot_LR: null,
+    mode: LRHRseg_bg, name: val_OST300_part}
+gpu_ids: [0]
+logger: {print_freq: 200, save_checkpoint_freq: 2000.0}
+model: sftgan
+name: debug_003_SFTGANx4_OST
+network_D: {which_model_D: dis_acd}
+network_G: {which_model_G: sft_arch}
+path: {pretrain_model_G: ../experiments/pretrained_models/sft_net_ini.pth, resume_state: null,
+  root: /home/xtwang/Projects/BasicSR}
+scale: 4
+train:
+  beta1_D: 0.9
+  beta1_G: 0.9
+  feature_criterion: l1
+  feature_weight: 1
+  gan_type: vanilla
+  gan_weight: 0.005
+  lr_D: 0.0001
+  lr_G: 0.0001
+  lr_gamma: 0.5
+  lr_scheme: MultiStepLR
+  lr_steps: [50000, 100000, 150000, 200000]
+  manual_seed: 0
+  niter: 600000.0
+  pixel_criterion: l1
+  pixel_weight: 0
+  val_freq: 2000.0
+  weight_decay_D: 0
+  weight_decay_G: 0
+use_tb_logger: false
