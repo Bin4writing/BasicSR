@@ -32,6 +32,7 @@ IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.ppm', '.PP
 from data.util import *
 
 from runner import TrainRunner
+from generate import Generator
 
 def worker(path, save_folder, crop_sz, step, thres_sz, compression_level):
     img_name = os.path.basename(path)
@@ -218,13 +219,15 @@ class Console(cmd.Cmd):
         super().__init__()
         self.dataset = Dataset()
         self.runner = TrainRunner()
+        self.generator = Generator()
         self.generate_parser = argparse.ArgumentParser()
         self.generate_parser.add_argument("--count", help="set count of HR imgs to be used, default to the total", type=int)
         self.generate_parser.add_argument("--size", help="set size of a sub-crop img, default to 480", type=int)
         self.generate_parser.add_argument("--scale", help="set ratio of HR/LR, default to 4",type=int)
 
     def do_root(self,path):
-        self.dataset.root = os.path.expanduser(path) 
+        self.dataset.root = os.path.expanduser(path)
+        self.generator.root = self.dataset.root
         print('dataset root dir has been set to {}'.format(self.dataset.root))
 
     def do_load(self,name_str):
@@ -233,6 +236,7 @@ class Console(cmd.Cmd):
             self.help_load()
             return
         self.dataset.name = name_str
+        self.generator.name = name_str
 
     def help_load(self):
         print('\n'.join([
@@ -257,6 +261,14 @@ class Console(cmd.Cmd):
     def help_generate(self):
         print('\n'.join([
             'todo'
+            ]))
+
+    def do_recover(self,line):
+        self.generator.run()
+
+    def help_recover(self):
+        print('\n'.join([
+            'recover HR from LR'
             ]))
     
     def do_lmdb(self,type_str):
