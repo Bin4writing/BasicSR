@@ -6,15 +6,6 @@ import util as util
 from models.SRRaGAN_model import SRRaGANModel
 from data import Dataset
 
-
-
-
-def bak():
-    generate_conf = self.config['datasets']['generate']
-    self.result = self.config['path']['results_root']
-    self._lr_dir = generate_conf['dataroot_LR']
-    self._name = generate_conf['dataroot_LR'].split('/')[-1]
-
 class Generator():
     def __init__(self,path='config/generate.yaml'):
         self.config = Config(path).load(is_train=False).setMissingNone()
@@ -30,7 +21,7 @@ class Generator():
     def path(self,val):
         self._path = val
         self.config.load(is_train=False,path=val).setMissingNone()
-        self.result_dir = self.config['path']['result_root']
+        self.result_dir = self.config['path']['results_root']
 
     def model_with(self,conf):
         return SRRaGANModel(conf)
@@ -60,7 +51,8 @@ class Generator():
     def run(self):
         for ds in self.datasets:
             self.log('\nGenerating from [{:s}]...'.format(ds.cnf['dataroot_LR']))
-            ds_dir = os.path.join(self.result_dir,self.model.name,ds.name)
+            ds_dir = os.path.join(self.result_dir,ds.name)
+
             util.mkdir(ds_dir)
             for data in ds.loader:
                 img_path = data['LR_path'][0]
