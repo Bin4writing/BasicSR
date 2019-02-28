@@ -132,7 +132,7 @@ class TrainRunner(Runner):
                 
                 self.model.update_learning_rate()
 
-                self.model.feed_data(ds.loader)
+                self.model.feed_data(ds)
                 self.model.optimize_parameters(self.current_step)
 
                 # log

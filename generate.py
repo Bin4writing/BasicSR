@@ -54,7 +54,7 @@ class Generator():
             ds_dir = os.path.join(self.result_dir,ds.name)
 
             util.mkdir(ds_dir)
-            for data in ds.loader:
+            for data in ds:
                 img_path = data['LR_path'][0]
                 img_name = os.path.splitext(os.path.basename(img_path))[0]
 
