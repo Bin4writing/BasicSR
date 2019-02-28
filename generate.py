@@ -16,7 +16,7 @@ class Generator():
         self._model = None
         generate_conf = self.config['datasets']['generate']
         self.root = os.path.dirname(generate_conf['dataroot_LR'])
-        self.result = self.config['results_root']
+        self.result = self.config['path']['results_root']
         self._lr_dir = generate_conf['dataroot_LR']
         self._name = generate_conf['dataroot_LR'].split('/')[-1]
 
