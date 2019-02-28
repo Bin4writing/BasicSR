@@ -4,7 +4,8 @@ import os.path
 import random
 import numpy as np
 import cv2
-import torch
+import torch.utils as torch_util
+from torch import from_numpy
 from torch.utils.data import Dataset as TorchDataset
 import torch.utils.data as data
 import data.util as util
@@ -15,13 +16,13 @@ class Dataset(TorchDataset):
     def __init__(self, cnf):
         super(Dataset, self).__init__()
         self.phase = cnf['phase']
-        self.loader = torch.utils.data.DataLoader(
+        self.loader = torch_util.data.DataLoader(
             self,
             batch_size=cnf['batch_size'],
             shuffle=cnf['use_shuffle'],
             num_workers=cnf['n_workers'],
             drop_last=True,
-            pin_memory=True) if self.phase == 'train' else torch.utils.data.DataLoader(
+            pin_memory=True) if self.phase == 'train' else torch_util.data.DataLoader(
             self, batch_size=1, shuffle=False, num_workers=1, pin_memory=True)
 
         self.cnf = cnf
@@ -114,8 +115,8 @@ class Dataset(TorchDataset):
         if img_HR.shape[2] == 3:
             img_HR = img_HR[:, :, [2, 1, 0]]
             img_LR = img_LR[:, :, [2, 1, 0]]
-        img_HR = torch.from_numpy(np.ascontiguousarray(np.transpose(img_HR, (2, 0, 1)))).float()
-        img_LR = torch.from_numpy(np.ascontiguousarray(np.transpose(img_LR, (2, 0, 1)))).float()
+        img_HR = from_numpy(np.ascontiguousarray(np.transpose(img_HR, (2, 0, 1)))).float()
+        img_LR = from_numpy(np.ascontiguousarray(np.transpose(img_LR, (2, 0, 1)))).float()
 
         if LR_path is None:
             LR_path = HR_path
