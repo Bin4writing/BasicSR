@@ -152,30 +152,27 @@ class TrainRunner(Runner):
                         avg_psnr = 0.0
                         idx = 0
                         for val_ds in self.val_datasets:
-                            idx += 1
-                            img_name = os.path.splitext(os.path.basename(val_ds['LR_path'][0]))[0]
-                            img_dir = os.path.join(self.config['path']['val_images'], img_name)
-                            util.mkdir(img_dir)
+                            for val_data in val_ds.loader:
+                                idx += 1
+                                img_name = os.path.splitext(os.path.basename(val_ds['LR_path'][0]))[0]
+                                img_dir = os.path.join(self.config['path']['val_images'], img_name)
+                                util.mkdir(img_dir)
 
-                            self.model.feed_data(val_ds.loader)
-                            self.model.test()
+                                self.model.feed_data(val_ds.loader)
+                                self.model.test()
 
-                            visuals = self.model.get_current_visuals()
-                            sr_img = util.tensor2img(visuals['SR'])  # uint8
-                            gt_img = util.tensor2img(visuals['HR'])  # uint8
+                                visuals = self.model.get_current_visuals()
+                                sr_img = util.tensor2img(visuals['SR'])  # uint8
+                                gt_img = util.tensor2img(visuals['HR'])  # uint8
 
-                            # Save SR images for reference
-                            save_img_path = os.path.join(img_dir, '{:s}_{:d}.png'.format(\
-                                img_name, self.current_step))
-                            util.save_img(sr_img, save_img_path)
 
-                            # calculate PSNR
-                            crop_size = self.config['scale']
-                            gt_img = gt_img / 255.
-                            sr_img = sr_img / 255.
-                            cropped_sr_img = sr_img[crop_size:-crop_size, crop_size:-crop_size, :]
-                            cropped_gt_img = gt_img[crop_size:-crop_size, crop_size:-crop_size, :]
-                            avg_psnr += util.calculate_psnr(cropped_sr_img * 255, cropped_gt_img * 255)
+                                # calculate PSNR
+                                crop_size = self.config['scale']
+                                gt_img = gt_img / 255.
+                                sr_img = sr_img / 255.
+                                cropped_sr_img = sr_img[crop_size:-crop_size, crop_size:-crop_size, :]
+                                cropped_gt_img = gt_img[crop_size:-crop_size, crop_size:-crop_size, :]
+                                avg_psnr += util.calculate_psnr(cropped_sr_img * 255, cropped_gt_img * 255)
 
                         avg_psnr = avg_psnr / idx
 

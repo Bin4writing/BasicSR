@@ -58,32 +58,8 @@ class Dataset(TorchDataset):
             img_HR = util.channel_convert(img_HR.shape[2], self.cnf['color'], [img_HR])[0]
 
         # get LR image
-        if self.paths_LR:
-            LR_path = self.paths_LR[index]
-            img_LR = util.read_img(self.LR_env, LR_path)
-        else:  # down-sampling on-the-fly
-            # randomly scale during training
-            if self.cnf['phase'] == 'train':
-                random_scale = random.choice(self.random_scale_list)
-                H_s, W_s, _ = img_HR.shape
-
-                def _mod(n, random_scale, scale, thres):
-                    rlt = int(n * random_scale)
-                    rlt = (rlt // scale) * scale
-                    return thres if rlt < thres else rlt
-
-                H_s = _mod(H_s, random_scale, scale, HR_size)
-                W_s = _mod(W_s, random_scale, scale, HR_size)
-                img_HR = cv2.resize(np.copy(img_HR), (W_s, H_s), interpolation=cv2.INTER_LINEAR)
-                # force to 3 channels
-                if img_HR.ndim == 2:
-                    img_HR = cv2.cvtColor(img_HR, cv2.COLOR_GRAY2BGR)
-
-            H, W, _ = img_HR.shape
-            # using matlab imresize
-            img_LR = util.imresize_np(img_HR, 1 / scale, True)
-            if img_LR.ndim == 2:
-                img_LR = np.expand_dims(img_LR, axis=2)
+        LR_path = self.paths_LR[index]
+        img_LR = util.read_img(self.LR_env, LR_path)
 
         if self.cnf['phase'] == 'train':
             # if the image size is too small

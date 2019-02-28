@@ -8,25 +8,6 @@ from torch.optim import lr_scheduler
 
 import models.networks as networks
 
-class GANLoss(nn.Module):
-    def __init__(self, real_label_val=1.0, fake_label_val=0.0):
-        super(GANLoss, self).__init__()
-        self.real_label_val = real_label_val
-        self.fake_label_val = fake_label_val
-        self.loss = nn.BCEWithLogitsLoss()
-
-
-    def get_target_label(self, input, target_is_real):
-        if target_is_real:
-            return torch.empty_like(input).fill_(self.real_label_val)
-        else:
-            return torch.empty_like(input).fill_(self.fake_label_val)
-
-    def forward(self, input, target_is_real):
-        target_label = self.get_target_label(input, target_is_real)
-        loss = self.loss(input, target_label)
-        return loss
-
 class ESRGAN():
     def __init__(self, opt):
         self.opt = opt
@@ -36,7 +17,7 @@ class ESRGAN():
         self.schedulers = []
         self.optimizers = []
         train_opt = opt['train']
-
+        self.train_opt = train_opt
         # define networks and load pretrained models
         self.netG = networks.define_G(opt).to(self.device)  # G
         if self.is_train:
@@ -50,7 +31,7 @@ class ESRGAN():
             self.cri_pix = nn.L1Loss().to(self.device)
             self.cri_fea = nn.L1Loss().to(self.device)
             self.netF = networks.define_F(opt, use_bn=False).to(self.device)
-            self.cri_gan = GANLoss(1.0, 0.0).to(self.device)
+            self.cri_gan = nn.BCEWithLogitsLoss().to(self.device)
             self.l_gan_w = train_opt['gan_weight']
             self.D_update_ratio = train_opt['D_update_ratio'] if train_opt['D_update_ratio'] else 1
             self.D_init_iters = train_opt['D_init_iters'] if train_opt['D_init_iters'] else 0
@@ -76,17 +57,12 @@ class ESRGAN():
             self.log_dict = OrderedDict()
             self.l_pix_w = train_opt['pixel_weight']
             self.l_fea_w = train_opt['feature_weight']
-        # print network
-        self.print_network()
 
 
     def feed_data(self, data):
         self.var_L = data['LR'].to(self.device)
 
         self.var_H = data['HR'].to(self.device)
-
-        input_ref = data['ref'] if 'ref' in data else data['HR']
-        self.var_ref = input_ref.to(self.device)
 
 
     def optimize_parameters(self, step):
@@ -96,7 +72,7 @@ class ESRGAN():
         self.optimizer_G.zero_grad()
 
         self.fake_H = self.netG(self.var_L)
-
+        batch_size = self.train_opt['batch_size']
         l_g_total = 0
         if step % self.D_update_ratio == 0 and step > self.D_init_iters:
             l_g_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.var_H)
@@ -106,11 +82,11 @@ class ESRGAN():
             l_g_fea = self.l_fea_w*self.cri_fea(fake_fea,real_fea)
             
             # G gan + cls loss
-            pred_g_fake = self.netD(self.fake_H)
-            pred_d_real = self.netD(self.var_ref).detach()
+            d_fake = self.netD(self.fake_H)
+            d_real = self.netD(self.var_H).detach()
 
-            l_g_gan = self.l_gan_w * (self.cri_gan(pred_d_real - torch.mean(pred_g_fake), False) +
-                                      self.cri_gan(pred_g_fake - torch.mean(pred_d_real), True)) / 2 
+            l_g_gan = self.l_gan_w * (self.cri_gan(d_real - torch.mean(d_fake), torch.zeros_like(d_real)) +
+                                      self.cri_gan(d_fake - torch.mean(d_real), torch.ones_like(d_fake))) / 2 
             l_g_total += l_g_gan
             l_g_total.backward()
             self.optimizer_G.step()
@@ -121,10 +97,10 @@ class ESRGAN():
 
         self.optimizer_D.zero_grad()
         l_d_total = 0
-        pred_d_real = self.netD(self.var_ref)
-        pred_d_fake = self.netD(self.fake_H).detach()  # detach to avoid BP to G
-        l_d_real = self.cri_gan(pred_d_real - torch.mean(pred_d_fake), True)
-        l_d_fake = self.cri_gan(pred_d_fake - torch.mean(pred_d_real), False)
+        d_real = self.netD(self.var_H)
+        d_fake = self.netD(self.fake_H).detach()  # detach to avoid BP to G
+        l_d_real = self.cri_gan(d_real - torch.mean(d_fake), torch.ones_like(d_real))
+        l_d_fake = self.cri_gan(d_fake - torch.mean(d_real), torch.zeros_like(d_fake))
 
         l_d_total = (l_d_real + l_d_fake) / 2
 
@@ -143,10 +119,6 @@ class ESRGAN():
         self.log_dict['l_d_real'] = l_d_real.item()
         self.log_dict['l_d_fake'] = l_d_fake.item()
 
-        # D outputs
-        self.log_dict['D_real'] = torch.mean(pred_d_real.detach())
-        self.log_dict['D_fake'] = torch.mean(pred_d_fake.detach())
-
     def generate(self,data):
         self.var_L = data['LR'].to(self.device)
         self.netG.eval()
@@ -164,32 +136,6 @@ class ESRGAN():
         return self.log_dict
 
 
-    def print_network(self):
-        # Generator
-        s, n = self.get_network_description(self.netG)
-        if isinstance(self.netG, nn.DataParallel):
-            net_struc_str = '{} - {}'.format(self.netG.__class__.__name__,
-                                             self.netG.module.__class__.__name__)
-        else:
-            net_struc_str = '{}'.format(self.netG.__class__.__name__)
-
-        if self.is_train:
-            # Discriminator
-            s, n = self.get_network_description(self.netD)
-            if isinstance(self.netD, nn.DataParallel):
-                net_struc_str = '{} - {}'.format(self.netD.__class__.__name__,
-                                                self.netD.module.__class__.__name__)
-            else:
-                net_struc_str = '{}'.format(self.netD.__class__.__name__)
-
-
-            if self.cri_fea:  # F, Perceptual Network
-                s, n = self.get_network_description(self.netF)
-                if isinstance(self.netF, nn.DataParallel):
-                    net_struc_str = '{} - {}'.format(self.netF.__class__.__name__,
-                                                    self.netF.module.__class__.__name__)
-                else:
-                    net_struc_str = '{}'.format(self.netF.__class__.__name__)
 
     def load(self):
         load_path_G = self.opt['path']['pretrain_model_G']
