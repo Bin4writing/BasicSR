@@ -6,7 +6,7 @@ import time
 import random
 import numpy as np
 from collections import OrderedDict
-from models import SRRaGANModel
+from models.SRRaGAN_model import SRRaGANModel
 
 import torch
 
