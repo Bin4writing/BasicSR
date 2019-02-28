@@ -86,7 +86,7 @@ def define_G(opt):
     if gpu_ids:
         assert torch.cuda.is_available()
         # netG = nn.DataParallel(netG)
-        netG = parallel.DataParallelModel(netG)
+        netG = parallel.DataParallelModel(netG,gpu_ids)
     return netG
 
 
@@ -101,7 +101,7 @@ def define_D(opt):
     init_weights(netD, init_type='kaiming', scale=1)
     if gpu_ids:
         # netD = nn.DataParallel(netD)
-        netD = parallel.DataParallelModel(netD)
+        netD = parallel.DataParallelModel(netD,gpu_ids)
     return netD
 
 
@@ -118,6 +118,6 @@ def define_F(opt, use_bn=False):
     # netF = arch.ResNet101FeatureExtractor(use_input_norm=True, device=device)
     if gpu_ids:
         # netF = nn.DataParallel(netF)
-        netF = parallel.DataParallelModel(netF)
+        netF = parallel.DataParallelModel(netF,gpu_ids)
     netF.eval()  # No need to train
     return netF
