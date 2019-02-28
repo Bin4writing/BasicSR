@@ -85,6 +85,5 @@ class BaseModel():
             self.optimizers[i].load_state_dict(o)
         for i, s in enumerate(resume_schedulers):
             self.schedulers[i].load_state_dict(s)
-
     def generate(self):
         raise NotImplementedError('not a instance of generatable model')

@@ -6,10 +6,12 @@ from torch.optim import lr_scheduler
 
 import models.networks as networks
 from .base_model import BaseModel
-from models.modules.loss import GANLoss 
+from models.modules.loss import GANLoss,GLoss
 import models.parallel as parallel
+from models.parallel import gather
 
-
+def g(it):
+    gather(it,None)
 
 class SRRaGANModel(BaseModel):
     def __init__(self, opt):
@@ -59,6 +61,7 @@ class SRRaGANModel(BaseModel):
             self.cri_gan = parallel.DataParallelCriterion(self.cri_gan,opt['gpu_ids'])
             self.l_pix_w = train_opt['pixel_weight']
             self.l_fea_w = train_opt['feature_weight']
+            self.g_loss = GLoss(self)
         # print network
         self.print_network()
 
@@ -80,20 +83,20 @@ class SRRaGANModel(BaseModel):
 
         self.fake_H = self.netG(self.var_L)
 
-        l_g_total = [ 0 for _ in self.fake_H]
+        l_g_total = 0
         if step % self.D_update_ratio == 0 and step > self.D_init_iters:
             l_g_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.var_H)
             l_g_total += l_g_pix
-            real_fea = [ it.detach() for it in self.netF(self.var_H)] 
-            fake_fea = self.netF(self.fake_H)
+            real_fea = g(self.netF(self.var_H)).detach()
+            fake_fea = g(self.netF(self.fake_H))
             l_g_fea = self.l_fea_w*self.cri_fea(fake_fea,real_fea)
             
             # G gan + cls loss
-            pred_g_fake = self.netD(self.fake_H)
-            pred_d_real = [ it.detach() for it in self.netD(self.var_ref) ]
+            pred_g_fake = g(self.netD(self.fake_H))
+            pred_d_real = g(self.netD(self.var_ref)).detach()
 
-            l_g_gan = [self.l_gan_w * (self.cri_gan(y - torch.mean(x), False) +
-                                      self.cri_gan(x - torch.mean(y), True)) / 2 for x,y in zip(pred_g_fake,pred_d_real)] 
+            l_g_gan = self.l_gan_w * (self.cri_gan(y - torch.mean(x), False) +
+                                      self.cri_gan(x - torch.mean(y), True)) / 2 
             l_g_total += l_g_gan
             l_g_total.backward()
             self.optimizer_G.step()
@@ -104,8 +107,8 @@ class SRRaGANModel(BaseModel):
 
         self.optimizer_D.zero_grad()
         l_d_total = 0
-        pred_d_real = self.netD(self.var_ref)
-        pred_d_fake = self.netD(self.fake_H.detach())  # detach to avoid BP to G
+        pred_d_real = g(self.netD(self.var_ref))
+        pred_d_fake = g(self.netD(self.fake_H)).detach()  # detach to avoid BP to G
         l_d_real = self.cri_gan(pred_d_real - torch.mean(pred_d_fake), True)
         l_d_fake = self.cri_gan(pred_d_fake - torch.mean(pred_d_real), False)
 
