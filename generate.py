@@ -56,11 +56,11 @@ class Generator():
             util.mkdir(dataset_dir)
 
             for data in data_loader:
-                model.feed_data(data, need_HR=False)
+                self.model.feed_data(data, need_HR=False)
                 img_path = data['LR_path'][0]
                 img_name = os.path.splitext(os.path.basename(img_path))[0]
 
-                sr_img = util.tensor2img(model.generate())
+                sr_img = util.tensor2img(self.model.generate())
 
                 suffix = self.config['suffix']
                 if suffix:
