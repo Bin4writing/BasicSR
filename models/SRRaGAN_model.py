@@ -83,7 +83,7 @@ class SRRaGANModel(BaseModel):
         l_g_total = 0
         if step % self.D_update_ratio == 0 and step > self.D_init_iters:
             loss = parallel.DataParallelCriterion(loss)
-            l_g_total = loss()
+            l_g_total = loss(None)
             l_g_total.backward()
             self.optimizer_G.step()
 
