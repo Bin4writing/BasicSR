@@ -19,7 +19,7 @@ import random
 import numpy as np
 import cv2
 import torch
-import torch.utils.data.Dataset as TorchDataset
+from torch.utils.data import Dataset as TorchDataset
 import torch.utils.data as data
 import data.util as util
 
