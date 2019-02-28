@@ -188,7 +188,7 @@ class SRRaGANModel(BaseModel):
         self.var_L = data['LR'].to(self.device)
         self.netG.eval()
         with torch.no_grad():
-            fake_H = parallel.gather(self.netG(self.var_L))
+            fake_H = parallel.gather(self.netG(self.var_L),self.device)
             return fake_H.detach()[0].float().cpu()
 
     def test(self):
