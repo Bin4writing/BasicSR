@@ -1,5 +1,5 @@
 datasets:
-        generate: {dataroot_LR: /home/super/images/images, dataroot_HR: /home/super/images/images ,name: asc, mode: LRHR}
+        generate: {dataroot_LR: /home/super/images/images, dataroot_HR: /home/super/images/images ,name: asc}
 gpu_ids: [2,3]
 model: srragan
 name: RRDB_ESRGAN_x4

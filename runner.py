@@ -13,7 +13,9 @@ import torch
 from config import Config
 
 import util
-from data import create_dataloader, create_dataset
+from data import create_dataloader
+from data.LRHR_dataset import LRHRDataset
+
 import yaml
 
 
@@ -104,7 +106,7 @@ class TrainRunner(Runner):
 
         for phase, dataset_opt in self.config['datasets'].items():
             if phase == 'train':
-                train_set = create_dataset(dataset_opt)
+                train_set = LRHRDataset(dataset_opt)
                 train_size = int(math.ceil(len(train_set) / dataset_opt['batch_size']))
                 self.log('Number of train images: {:,d}, iters: {:,d}'.format(
                     len(train_set), train_size))
@@ -116,7 +118,7 @@ class TrainRunner(Runner):
                     self.total_epochs, self.total_iters))
                 self._train_loader = create_dataloader(train_set, dataset_opt)
             elif phase == 'val':
-                val_set = create_dataset(dataset_opt)
+                val_set = LRHRDataset(dataset_opt)
                 self._val_loader = create_dataloader(val_set, dataset_opt)
                 self.log('Number of val images in [{:s}]: {:d}'.format(dataset_opt['name'],
                                                                         len(val_set)))

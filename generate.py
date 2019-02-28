@@ -3,8 +3,10 @@ from config import Config
 
 import os
 import util as util
-from data import create_dataset, create_dataloader
+from data import create_dataloader
 from models.SRRaGAN_model import SRRaGANModel
+from data.LRHR_dataset import LRHRDataset
+
 
 
 
@@ -41,15 +43,15 @@ class Generator():
     def run(self):
         data_loaders = []
         for phase, dataset_opt in sorted(self.config['datasets'].items()):
-            logger.info(dataset_opt)
-            data_set = create_dataset(dataset_opt)
+            self.log(dataset_opt)
+            data_set = LRHRDataset(dataset_opt)
             data_loader = create_dataloader(data_set, dataset_opt)
-            logger.info('Number of images in [{:s}]: {:d}'.format(self._name, len(data_set)))
+            self.log('Number of images in [{:s}]: {:d}'.format(self._name, len(data_set)))
             data_loaders.append(data_loader)
 
         for data_loader in data_loaders:
             data_set_name = self._name
-            logger.info('\nGenerating from [{:s}]...'.format(data_set_name))
+            self.log('\nGenerating from [{:s}]...'.format(data_set_name))
             dataset_dir = os.path.join(self.result, data_set_name)
             util.mkdir(dataset_dir)
 
@@ -66,3 +68,6 @@ class Generator():
                 else:
                     save_img_path = os.path.join(dataset_dir, img_name + '.png')
                 util.save_img(sr_img, save_img_path)
+if __name__ == '__main__':
+    generator = Generator()
+    generator.run()

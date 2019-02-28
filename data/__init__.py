@@ -1,6 +1,5 @@
 import torch.utils.data
 
-
 def create_dataloader(dataset, dataset_opt):
     phase = dataset_opt['phase']
     if phase == 'train':
@@ -17,10 +16,5 @@ def create_dataloader(dataset, dataset_opt):
 
 
 def create_dataset(dataset_opt):
-    mode = dataset_opt['mode']
-    if mode == 'LR':
-        from data.LR_dataset import LRDataset as D
-    elif mode == 'LRHR':
-        from data.LRHR_dataset import LRHRDataset as D
-    dataset = D(dataset_opt)
+    dataset = LRHRDataset(dataset_opt)
     return dataset
