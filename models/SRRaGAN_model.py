@@ -7,6 +7,7 @@ from torch.optim import lr_scheduler
 import models.networks as networks
 from .base_model import BaseModel
 from models.modules.loss import GANLoss, GradientPenaltyLoss
+import models.parallel as parallel
 
 
 
@@ -37,7 +38,6 @@ class SRRaGANModel(BaseModel):
                 self.l_pix_w = train_opt['pixel_weight']
             else:
                 self.cri_pix = None
-
             # G feature loss
             if train_opt['feature_weight'] > 0:
                 l_fea_type = train_opt['feature_criterion']
@@ -52,7 +52,6 @@ class SRRaGANModel(BaseModel):
                 self.cri_fea = None
             if self.cri_fea:  # load VGG perceptual loss
                 self.netF = networks.define_F(opt, use_bn=False).to(self.device)
-
             # GD gan loss
             self.cri_gan = GANLoss(train_opt['gan_type'], 1.0, 0.0).to(self.device)
             self.l_gan_w = train_opt['gan_weight']
@@ -65,7 +64,7 @@ class SRRaGANModel(BaseModel):
                 # gradient penalty loss
                 self.cri_gp = GradientPenaltyLoss(device=self.device).to(self.device)
                 self.l_gp_w = train_opt['gp_weigth']
-
+                self.cri_gp = parallel.DataParallelCriterion(self.cri_gp)
             # optimizers
             # G
             wd_G = train_opt['weight_decay_G'] if train_opt['weight_decay_G'] else 0
@@ -91,8 +90,14 @@ class SRRaGANModel(BaseModel):
                 raise NotImplementedError('MultiStepLR learning rate scheme is enough.')
 
             self.log_dict = OrderedDict()
+            # parallelize
+            self.cri_pix = parallel.DataParallelCriterion(self.cri_pix)
+            self.cri_fea = parallel.DataParallelCriterion(self.cri_fea)
+            self.cri_gan = parallel.DataParallelCriterion(self.cri_gan)
+
         # print network
         self.print_network()
+
 
     def feed_data(self, data, need_HR=True):
         # LR
@@ -183,7 +188,7 @@ class SRRaGANModel(BaseModel):
         self.var_L = data['LR'].to(self.device)
         self.netG.eval()
         with torch.no_grad():
-            fake_H = self.netG(self.var_L)
+            fake_H = parallel.gather(self.netG(self.var_L))
             return fake_H.detach()[0].float().cpu()
 
     def test(self):

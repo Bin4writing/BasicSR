@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 
 
-
 # Define GAN loss: [vanilla | lsgan | wgan-gp]
 class GANLoss(nn.Module):
     def __init__(self, gan_type, real_label_val=1.0, fake_label_val=0.0):
