@@ -6,7 +6,7 @@ import time
 import random
 import numpy as np
 from collections import OrderedDict
-from models.SRRaGAN_model import SRRaGANModel
+from models.ESRGAN import ESRGAN
 
 import torch
 
@@ -118,7 +118,7 @@ class TrainRunner(Runner):
                 self.val_datasets.append(ds)
                 self.log('Number of val images in [{:s}]: {:d}'.format(cnf['name'],
                                                                     len(ds)))
-        self.model = SRRaGANModel(self.config)
+        self.model = ESRGAN(self.config)
 
     def run(self):
         assert self.model is not None, "model not created"

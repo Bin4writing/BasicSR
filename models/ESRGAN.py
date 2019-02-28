@@ -101,16 +101,16 @@ class ESRGAN():
         if step % self.D_update_ratio == 0 and step > self.D_init_iters:
             l_g_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.var_H)
             l_g_total += l_g_pix
-            real_fea = g(self.netF(self.var_H)).detach()
-            fake_fea = g(self.netF(self.fake_H))
+            real_fea = self.netF(self.var_H).detach()
+            fake_fea = self.netF(self.fake_H)
             l_g_fea = self.l_fea_w*self.cri_fea(fake_fea,real_fea)
             
             # G gan + cls loss
-            pred_g_fake = g(self.netD(self.fake_H))
-            pred_d_real = g(self.netD(self.var_ref)).detach()
+            pred_g_fake = self.netD(self.fake_H)
+            pred_d_real = self.netD(self.var_ref).detach()
 
-            l_g_gan = self.l_gan_w * (self.cri_gan(y - torch.mean(x), False) +
-                                      self.cri_gan(x - torch.mean(y), True)) / 2 
+            l_g_gan = self.l_gan_w * (self.cri_gan(pred_d_real - torch.mean(pred_g_fake), False) +
+                                      self.cri_gan(pred_g_fake - torch.mean(pred_d_real), True)) / 2 
             l_g_total += l_g_gan
             l_g_total.backward()
             self.optimizer_G.step()
@@ -121,8 +121,8 @@ class ESRGAN():
 
         self.optimizer_D.zero_grad()
         l_d_total = 0
-        pred_d_real = g(self.netD(self.var_ref))
-        pred_d_fake = g(self.netD(self.fake_H)).detach()  # detach to avoid BP to G
+        pred_d_real = self.netD(self.var_ref)
+        pred_d_fake = self.netD(self.fake_H).detach()  # detach to avoid BP to G
         l_d_real = self.cri_gan(pred_d_real - torch.mean(pred_d_fake), True)
         l_d_fake = self.cri_gan(pred_d_fake - torch.mean(pred_d_real), False)
 
@@ -151,7 +151,7 @@ class ESRGAN():
         self.var_L = data['LR'].to(self.device)
         self.netG.eval()
         with torch.no_grad():
-            fake_H = parallel.gather(self.netG(self.var_L),self.device)
+            fake_H = self.netG(self.var_L)
             return fake_H.detach()[0].float().cpu()
 
     def test(self):
