@@ -34,9 +34,9 @@ class Dataset(TorchDataset):
     def createLoader(self):
         self.loader = torch_util.data.DataLoader(
             self,
-            batch_size=cnf['batch_size'],
-            shuffle=cnf['use_shuffle'],
-            num_workers=cnf['n_workers'],
+            batch_size=self.cnf['batch_size'],
+            shuffle=self.cnf['use_shuffle'],
+            num_workers=self.cnf['n_workers'],
             drop_last=True,
             pin_memory=True) if self.phase == 'train' else torch_util.data.DataLoader(
             self, batch_size=1, shuffle=False, num_workers=1, pin_memory=True)
