@@ -86,7 +86,7 @@ class SRRaGANModel(BaseModel):
             l_g_total += l_g_pix
             real_fea = [ it.detach() for it in self.netF(self.var_H)] 
             fake_fea = self.netF(self.fake_H)
-            l_g_fea = [ self.l_fea_w*self.cri_fea(x,y) for x,y in zip(fake_fea,real_fea)]
+            l_g_fea = self.l_fea_w*self.cri_fea(fake_fea,real_fea)
             
             # G gan + cls loss
             pred_g_fake = self.netD(self.fake_H)
