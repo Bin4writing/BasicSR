@@ -6,7 +6,7 @@ from torch.optim import lr_scheduler
 
 import models.networks as networks
 from .base_model import BaseModel
-from models.modules.loss import GANLoss, GradientPenaltyLoss
+from models.modules.loss import GANLoss 
 import models.parallel as parallel
 
 
@@ -57,7 +57,8 @@ class SRRaGANModel(BaseModel):
             self.cri_pix = parallel.DataParallelCriterion(self.cri_pix)
             self.cri_fea = parallel.DataParallelCriterion(self.cri_fea)
             self.cri_gan = parallel.DataParallelCriterion(self.cri_gan)
-
+            self.l_pix_w = train_opt['pixel_weight']
+            self.l_fea_w = train_opt['feature_weight']
         # print network
         self.print_network()
 
