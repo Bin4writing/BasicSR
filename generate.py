@@ -14,10 +14,10 @@ class Generator():
     def __init__(self,path='config/generate.yaml'):
         self.config = Config(path).load(False).setMissingNone()
         self._model = None
-        self.root = ''
-        self.result = ''
-        self._lr_dir = ''
-        self._name = ''
+        self.root = os.path.dirname(self.config['datasets']['dataroot_LR'])
+        self.result = self.config['results_root']
+        self._lr_dir = self.config['datasets']['dataroot_LR']
+        self._name = self.config['datasets']['dataroot_LR'].split('/')[-1]
 
     @property
     def name(self):
@@ -50,9 +50,8 @@ class Generator():
             data_loaders.append(data_loader)
 
         for data_loader in data_loaders:
-            data_set_name = self._name
-            self.log('\nGenerating from [{:s}]...'.format(data_set_name))
-            dataset_dir = os.path.join(self.result, data_set_name)
+            self.log('\nGenerating from [{:s}]...'.format(self._name))
+            dataset_dir = os.path.join(self.result, self._name)
             util.mkdir(dataset_dir)
 
             for data in data_loader:
