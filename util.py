@@ -73,6 +73,14 @@ def tensor2img(tensor, out_type=np.uint8, min_max=(0, 1)):
 def save_img(img, img_path, mode='RGB'):
     cv2.imwrite(img_path, img)
 
+def mkdir_and_rename(path):
+    if os.path.exists(path):
+        new_name = path + '_archived_' + get_timestamp()
+        print('Path already exists. Rename it to [{:s}]'.format(new_name))
+        logger = logging.getLogger('base')
+        logger.info('Path already exists. Rename it to [{:s}]'.format(new_name))
+        os.rename(path, new_name)
+    os.makedirs(path)
 
 ####################
 # metric

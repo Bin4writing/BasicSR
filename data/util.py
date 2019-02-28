@@ -410,11 +410,6 @@ def imresize_np(img, scale, antialiasing=True):
         out_2[:, i, 2] = out_1_aug[:, idx:idx + kernel_width, 2].mv(weights_W[i])
 
     return out_2.numpy()
-
-
-if __name__ == '__main__':
-    # test imresize function
-    # read images
     img = cv2.imread('test.png')
     img = img * 1.0 / 255
     img = torch.from_numpy(np.transpose(img[:, :, [2, 1, 0]], (2, 0, 1))).float()
