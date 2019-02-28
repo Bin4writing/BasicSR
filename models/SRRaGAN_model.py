@@ -6,7 +6,7 @@ from torch.optim import lr_scheduler
 
 import models.networks as networks
 from .base_model import BaseModel
-from models.modules.loss import GANLoss 
+from models.modules.loss import GANLoss,ModelLoss
 import models.parallel as parallel
 
 
@@ -54,9 +54,9 @@ class SRRaGANModel(BaseModel):
         
             self.log_dict = OrderedDict()
             # parallelize
-            self.cri_pix = parallel.DataParallelCriterion(self.cri_pix)
-            self.cri_fea = parallel.DataParallelCriterion(self.cri_fea)
-            self.cri_gan = parallel.DataParallelCriterion(self.cri_gan)
+            # self.cri_pix = parallel.DataParallelCriterion(self.cri_pix)
+            # self.cri_fea = parallel.DataParallelCriterion(self.cri_fea)
+            # self.cri_gan = parallel.DataParallelCriterion(self.cri_gan)
             self.l_pix_w = train_opt['pixel_weight']
             self.l_fea_w = train_opt['feature_weight']
         # print network
@@ -71,6 +71,7 @@ class SRRaGANModel(BaseModel):
         input_ref = data['ref'] if 'ref' in data else data['HR']
         self.var_ref = input_ref.to(self.device)
 
+
     def optimize_parameters(self, step):
         for p in self.netD.parameters():
             p.requires_grad = False
@@ -78,23 +79,11 @@ class SRRaGANModel(BaseModel):
         self.optimizer_G.zero_grad()
 
         self.fake_H = self.netG(self.var_L)
-
+        loss = ModelLoss(self)
         l_g_total = 0
         if step % self.D_update_ratio == 0 and step > self.D_init_iters:
-            l_g_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.var_H)
-            l_g_total += l_g_pix
-            real_fea = parallel.gather(self.netF(self.var_H),self.device).detach()
-            fake_fea = self.netF(self.fake_H)
-            l_g_fea = self.l_fea_w * self.cri_fea(fake_fea, real_fea)
-            l_g_total += l_g_fea          
-            # G gan + cls loss
-            pred_g_fake = self.netD(self.fake_H)
-            pred_d_real = parallel.gather(self.netD(self.var_ref),self.device).detach()
-
-            l_g_gan = self.l_gan_w * (self.cri_gan(pred_d_real - torch.mean(pred_g_fake), False) +
-                                      self.cri_gan(pred_g_fake - torch.mean(pred_d_real), True)) / 2
-            l_g_total += l_g_gan
-
+            loss = parallel.DataParallelCriterion(loss)
+            l_g_total = loss()
             l_g_total.backward()
             self.optimizer_G.step()
 
