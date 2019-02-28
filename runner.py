@@ -127,69 +127,70 @@ class TrainRunner(Runner):
         self.log('Start training from epoch: {:d}, iter: {:d}'.format(self.start_epoch, self.current_step))
         for epoch in range(self.start_epoch, self.total_epochs):
             for ds in self.datasets:
-                self.current_step += 1
-                if self.current_step > self.total_iters: break
-                
-                self.model.update_learning_rate()
+                for data in self.ds.loader:
+                    self.current_step += 1
+                    if self.current_step > self.total_iters: break
+                    
+                    self.model.update_learning_rate()
 
-                self.model.feed_data(ds)
-                self.model.optimize_parameters(self.current_step)
+                    self.model.feed_data(data)
+                    self.model.optimize_parameters(self.current_step)
 
-                # log
-                if self.current_step % self.config['logger']['print_freq'] == 0:
-                    logs = self.model.get_current_log()
-                    message = '<epoch:{:3d}, iter:{:8,d}, lr:{:.3e}> '.format(
-                        epoch, self.current_step, self.model.get_current_learning_rate())
-                    for k, v in logs.items():
-                        message += '{:s}: {:.4e} '.format(k, v)
+                    # log
+                    if self.current_step % self.config['logger']['print_freq'] == 0:
+                        logs = self.model.get_current_log()
+                        message = '<epoch:{:3d}, iter:{:8,d}, lr:{:.3e}> '.format(
+                            epoch, self.current_step, self.model.get_current_learning_rate())
+                        for k, v in logs.items():
+                            message += '{:s}: {:.4e} '.format(k, v)
+                            if self.config['use_tb_logger'] and 'debug' not in self.config['name']:
+                                self.tf_logger.add_scalar(k, v, self.current_step)
+                        self.log(message)
+
+                    # validation
+                    if self.current_step % self.config['train']['val_freq'] == 0:
+                        avg_psnr = 0.0
+                        idx = 0
+                        for val_ds in self.val_datasets:
+                            idx += 1
+                            img_name = os.path.splitext(os.path.basename(val_ds['LR_path'][0]))[0]
+                            img_dir = os.path.join(self.config['path']['val_images'], img_name)
+                            util.mkdir(img_dir)
+
+                            self.model.feed_data(val_ds.loader)
+                            self.model.test()
+
+                            visuals = self.model.get_current_visuals()
+                            sr_img = util.tensor2img(visuals['SR'])  # uint8
+                            gt_img = util.tensor2img(visuals['HR'])  # uint8
+
+                            # Save SR images for reference
+                            save_img_path = os.path.join(img_dir, '{:s}_{:d}.png'.format(\
+                                img_name, self.current_step))
+                            util.save_img(sr_img, save_img_path)
+
+                            # calculate PSNR
+                            crop_size = self.config['scale']
+                            gt_img = gt_img / 255.
+                            sr_img = sr_img / 255.
+                            cropped_sr_img = sr_img[crop_size:-crop_size, crop_size:-crop_size, :]
+                            cropped_gt_img = gt_img[crop_size:-crop_size, crop_size:-crop_size, :]
+                            avg_psnr += util.calculate_psnr(cropped_sr_img * 255, cropped_gt_img * 255)
+
+                        avg_psnr = avg_psnr / idx
+
+                        self.log('# Validation # PSNR: {:.4e}'.format(avg_psnr))
+                        self.log('<epoch:{:3d}, iter:{:8,d}> psnr: {:.4e}'.format(
+                            epoch, self.current_step, avg_psnr))
+
                         if self.config['use_tb_logger'] and 'debug' not in self.config['name']:
-                            self.tf_logger.add_scalar(k, v, self.current_step)
-                    self.log(message)
+                            self.tf_logger.add_scalar('psnr', avg_psnr, self.current_step)
 
-                # validation
-                if self.current_step % self.config['train']['val_freq'] == 0:
-                    avg_psnr = 0.0
-                    idx = 0
-                    for val_ds in self.val_datasets:
-                        idx += 1
-                        img_name = os.path.splitext(os.path.basename(val_ds['LR_path'][0]))[0]
-                        img_dir = os.path.join(self.config['path']['val_images'], img_name)
-                        util.mkdir(img_dir)
-
-                        self.model.feed_data(val_ds.loader)
-                        self.model.test()
-
-                        visuals = self.model.get_current_visuals()
-                        sr_img = util.tensor2img(visuals['SR'])  # uint8
-                        gt_img = util.tensor2img(visuals['HR'])  # uint8
-
-                        # Save SR images for reference
-                        save_img_path = os.path.join(img_dir, '{:s}_{:d}.png'.format(\
-                            img_name, self.current_step))
-                        util.save_img(sr_img, save_img_path)
-
-                        # calculate PSNR
-                        crop_size = self.config['scale']
-                        gt_img = gt_img / 255.
-                        sr_img = sr_img / 255.
-                        cropped_sr_img = sr_img[crop_size:-crop_size, crop_size:-crop_size, :]
-                        cropped_gt_img = gt_img[crop_size:-crop_size, crop_size:-crop_size, :]
-                        avg_psnr += util.calculate_psnr(cropped_sr_img * 255, cropped_gt_img * 255)
-
-                    avg_psnr = avg_psnr / idx
-
-                    self.log('# Validation # PSNR: {:.4e}'.format(avg_psnr))
-                    self.log('<epoch:{:3d}, iter:{:8,d}> psnr: {:.4e}'.format(
-                        epoch, self.current_step, avg_psnr))
-
-                    if self.config['use_tb_logger'] and 'debug' not in self.config['name']:
-                        self.tf_logger.add_scalar('psnr', avg_psnr, self.current_step)
-
-                # save models and training states
-                if self.current_step % self.config['logger']['save_checkpoint_freq'] == 0:
-                    self.log('Saving models and training states.')
-                    self.model.save(self.current_step)
-                    self.model.save_training_state(epoch, self.current_step)
+                    # save models and training states
+                    if self.current_step % self.config['logger']['save_checkpoint_freq'] == 0:
+                        self.log('Saving models and training states.')
+                        self.model.save(self.current_step)
+                        self.model.save_training_state(epoch, self.current_step)
 
         self.log('Saving the final self.model.')
         self.model.save('latest')
