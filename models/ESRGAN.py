@@ -4,18 +4,37 @@ import torch
 import torch.nn as nn
 from torch.optim import lr_scheduler
 
+
+
 import models.networks as networks
-from .base_model import BaseModel
-from models.modules.loss import GANLoss,GLoss
-import models.parallel as parallel
-from models.parallel import gather
 
-def g(it):
-    gather(it,None)
+class GANLoss(nn.Module):
+    def __init__(self, real_label_val=1.0, fake_label_val=0.0):
+        super(GANLoss, self).__init__()
+        self.real_label_val = real_label_val
+        self.fake_label_val = fake_label_val
+        self.loss = nn.BCEWithLogitsLoss()
 
-class SRRaGANModel(BaseModel):
+
+    def get_target_label(self, input, target_is_real):
+        if target_is_real:
+            return torch.empty_like(input).fill_(self.real_label_val)
+        else:
+            return torch.empty_like(input).fill_(self.fake_label_val)
+
+    def forward(self, input, target_is_real):
+        target_label = self.get_target_label(input, target_is_real)
+        loss = self.loss(input, target_label)
+        return loss
+
+class ESRGAN():
     def __init__(self, opt):
-        super(SRRaGANModel, self).__init__(opt)
+        self.opt = opt
+        self.device = torch.device('cuda' if opt['gpu_ids'] is not None else 'cpu')
+        self.name = opt['name']
+        self.is_train = opt['is_train']
+        self.schedulers = []
+        self.optimizers = []
         train_opt = opt['train']
 
         # define networks and load pretrained models
@@ -31,7 +50,7 @@ class SRRaGANModel(BaseModel):
             self.cri_pix = nn.L1Loss().to(self.device)
             self.cri_fea = nn.L1Loss().to(self.device)
             self.netF = networks.define_F(opt, use_bn=False).to(self.device)
-            self.cri_gan = GANLoss(train_opt['gan_type'], 1.0, 0.0).to(self.device)
+            self.cri_gan = GANLoss(1.0, 0.0).to(self.device)
             self.l_gan_w = train_opt['gan_weight']
             self.D_update_ratio = train_opt['D_update_ratio'] if train_opt['D_update_ratio'] else 1
             self.D_init_iters = train_opt['D_init_iters'] if train_opt['D_init_iters'] else 0
@@ -55,13 +74,8 @@ class SRRaGANModel(BaseModel):
                     train_opt['lr_steps'], train_opt['lr_gamma']))
         
             self.log_dict = OrderedDict()
-            # parallelize
-            self.cri_pix = parallel.DataParallelCriterion(self.cri_pix,opt['gpu_ids'])
-            self.cri_fea = parallel.DataParallelCriterion(self.cri_fea,opt['gpu_ids'])
-            self.cri_gan = parallel.DataParallelCriterion(self.cri_gan,opt['gpu_ids'])
             self.l_pix_w = train_opt['pixel_weight']
             self.l_fea_w = train_opt['feature_weight']
-            self.g_loss = GLoss(self)
         # print network
         self.print_network()
 
@@ -188,3 +202,55 @@ class SRRaGANModel(BaseModel):
     def save(self, iter_step):
         self.save_network(self.netG, 'G', iter_step)
         self.save_network(self.netD, 'D', iter_step)
+
+    def update_learning_rate(self):
+        for scheduler in self.schedulers:
+            scheduler.step()
+
+    def get_current_learning_rate(self):
+        return self.schedulers[0].get_lr()[0]
+
+    def get_network_description(self, network):
+        '''Get the string and total parameters of the network'''
+        if isinstance(network, nn.DataParallel):
+            network = network.module
+        s = str(network)
+        n = sum(map(lambda x: x.numel(), network.parameters()))
+        return s, n
+
+    def save_network(self, network, network_label, iter_step):
+        save_filename = '{}_{}.pth'.format(iter_step, network_label)
+        save_path = os.path.join(self.opt['path']['models'], save_filename)
+        if isinstance(network, nn.DataParallel):
+            network = network.module
+        state_dict = network.state_dict()
+        for key, param in state_dict.items():
+            state_dict[key] = param.cpu()
+        torch.save(state_dict, save_path)
+
+    def load_network(self, load_path, network, strict=True):
+        if isinstance(network, nn.DataParallel):
+            network = network.module
+        network.load_state_dict(torch.load(load_path), strict=strict)
+
+    def save_training_state(self, epoch, iter_step):
+        '''Saves training state during training, which will be used for resuming'''
+        state = {'epoch': epoch, 'iter': iter_step, 'schedulers': [], 'optimizers': []}
+        for s in self.schedulers:
+            state['schedulers'].append(s.state_dict())
+        for o in self.optimizers:
+            state['optimizers'].append(o.state_dict())
+        save_filename = '{}.state'.format(iter_step)
+        save_path = os.path.join(self.opt['path']['training_state'], save_filename)
+        torch.save(state, save_path)
+
+    def resume_training(self, resume_state):
+        '''Resume the optimizers and schedulers for training'''
+        resume_optimizers = resume_state['optimizers']
+        resume_schedulers = resume_state['schedulers']
+        assert len(resume_optimizers) == len(self.optimizers), 'Wrong lengths of optimizers'
+        assert len(resume_schedulers) == len(self.schedulers), 'Wrong lengths of schedulers'
+        for i, o in enumerate(resume_optimizers):
+            self.optimizers[i].load_state_dict(o)
+        for i, s in enumerate(resume_schedulers):
+            self.schedulers[i].load_state_dict(s)
