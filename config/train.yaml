@@ -16,7 +16,7 @@ scale: 4
 train:
   beta1_D: 0.9
   beta1_G: 0.9
-  feature_criterion: l1
+  feature_criterion: l2
   feature_weight: 1
   gan_type: vanilla
   gan_weight: 0.005
@@ -27,7 +27,7 @@ train:
   lr_steps: [50000, 100000, 200000, 300000]
   manual_seed: 0
   niter: 10000.0
-  pixel_criterion: l1
+  pixel_criterion: l2
   pixel_weight: 0.01
   val_freq: 5000.0
   weight_decay_D: 0

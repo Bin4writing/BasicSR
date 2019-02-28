@@ -55,7 +55,7 @@ class Runner:
 
     
     def log(self,msg):
-        print(util.get_time)
+        print(util.get_timestamp()+': '+msg)
 
     def prepare(self):
         raise NotImplementedError('must implement prepare!')
