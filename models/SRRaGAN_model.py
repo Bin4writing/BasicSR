@@ -82,7 +82,6 @@ class SRRaGANModel(BaseModel):
 
         l_g_total = 0
         if step % self.D_update_ratio == 0 and step > self.D_init_iters:
-
             l_g_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.var_H)
             l_g_total += l_g_pix
             real_fea = [ it.detach() for it in self.netF(self.var_H)] 
