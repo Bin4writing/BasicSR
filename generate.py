@@ -14,9 +14,9 @@ class Generator():
     def __init__(self,path='config/generate.yaml'):
         self.config = Config(path).load(False).setMissingNone()
         self._model = None
-        self.root = os.path.dirname(self.config['datasets']['dataroot_LR'])
-        self.result = self.config['results_root']
         generate_conf = self.config['datasets']['generate']
+        self.root = os.path.dirname(generate_conf['dataroot_LR'])
+        self.result = self.config['results_root']
         self._lr_dir = generate_conf['dataroot_LR']
         self._name = generate_conf['dataroot_LR'].split('/')[-1]
 
