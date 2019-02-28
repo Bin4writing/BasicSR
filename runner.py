@@ -127,7 +127,7 @@ class TrainRunner(Runner):
         self.log('Start training from epoch: {:d}, iter: {:d}'.format(self.start_epoch, self.current_step))
         for epoch in range(self.start_epoch, self.total_epochs):
             for ds in self.datasets:
-                for data in self.ds.loader:
+                for data in ds.loader:
                     self.current_step += 1
                     if self.current_step > self.total_iters: break
                     
