@@ -54,9 +54,9 @@ class SRRaGANModel(BaseModel):
         
             self.log_dict = OrderedDict()
             # parallelize
-            self.cri_pix = parallel.DataParallelCriterion(self.cri_pix)
-            self.cri_fea = parallel.DataParallelCriterion(self.cri_fea)
-            self.cri_gan = parallel.DataParallelCriterion(self.cri_gan)
+            self.cri_pix = parallel.DataParallelCriterion(self.cri_pix,opt['gpu_ids'])
+            self.cri_fea = parallel.DataParallelCriterion(self.cri_fea,opt['gpu_ids'])
+            self.cri_gan = parallel.DataParallelCriterion(self.cri_gan,opt['gpu_ids'])
             self.l_pix_w = train_opt['pixel_weight']
             self.l_fea_w = train_opt['feature_weight']
         # print network
@@ -80,21 +80,20 @@ class SRRaGANModel(BaseModel):
 
         self.fake_H = self.netG(self.var_L)
 
-        l_g_total = 0
+        l_g_total = [ 0 for _ in self.fake_H]
         if step % self.D_update_ratio == 0 and step > self.D_init_iters:
             l_g_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.var_H)
             l_g_total += l_g_pix
             real_fea = [ it.detach() for it in self.netF(self.var_H)] 
             fake_fea = self.netF(self.fake_H)
-            print(self.cri_fea(real_fea[0],fake_fea[0]))
             l_g_fea = [ self.l_fea_w*self.cri_fea(x,y) for x,y in zip(fake_fea,real_fea)]
-            l_g_total += l_g_fea          
+            
             # G gan + cls loss
             pred_g_fake = self.netD(self.fake_H)
             pred_d_real = [ it.detach() for it in self.netD(self.var_ref) ]
 
-            l_g_gan = self.l_gan_w * (self.cri_gan(pred_d_real - torch.mean(pred_g_fake), False) +
-                                      self.cri_gan(pred_g_fake - torch.mean(pred_d_real), True)) / 2
+            l_g_gan = [self.l_gan_w * (self.cri_gan(y - torch.mean(x), False) +
+                                      self.cri_gan(x - torch.mean(y), True)) / 2 for x,y in zip(pred_g_fake,pred_d_real)] 
             l_g_total += l_g_gan
             l_g_total.backward()
             self.optimizer_G.step()
