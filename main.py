@@ -251,8 +251,12 @@ class Console(cmd.Cmd):
             self.dataset.sub()
         else:
             self.dataset.sub(crop_sz=int(size_str))
-    def do_recover(self,line):
-        self.generator.run()
+    def do_recover(self,path):
+        path = path.strip()
+        if not path:
+            self.generator.prepare().run()
+        self.generator.path = path 
+        self.generator.clear().prepare().run()
 
     def help_recover(self):
         print('\n'.join([

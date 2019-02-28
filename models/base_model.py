@@ -8,6 +8,7 @@ class BaseModel():
     def __init__(self, opt):
         self.opt = opt
         self.device = torch.device('cuda' if opt['gpu_ids'] is not None else 'cpu')
+        self.name = opt['name']
         self.is_train = opt['is_train']
         self.schedulers = []
         self.optimizers = []
@@ -84,3 +85,6 @@ class BaseModel():
             self.optimizers[i].load_state_dict(o)
         for i, s in enumerate(resume_schedulers):
             self.schedulers[i].load_state_dict(s)
+
+    def generate(self):
+        raise NotImplementedError('not a instance of generatable model')

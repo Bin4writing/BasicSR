@@ -179,7 +179,8 @@ class SRRaGANModel(BaseModel):
         self.log_dict['D_real'] = torch.mean(pred_d_real.detach())
         self.log_dict['D_fake'] = torch.mean(pred_d_fake.detach())
 
-    def generate(self):
+    def generate(self,data):
+        self.var_L = data['LR'].to(self.device)
         self.netG.eval()
         with torch.no_grad():
             fake_H = self.netG(self.var_L)

@@ -41,11 +41,11 @@ class Config():
     def __init__(self, path):
         self.path = path
         self._conf = {}
-        ext = os.path.splitext(path)[-1]
+	
+    def load(self,is_train=True,path=None):
+        if path: self.path = path
         with open(self.path,'r',encoding='utf-8') as f:
             self._conf.update(ordered_load(f.read()))
-			
-    def load(self,is_train=True):
         scale = self._conf['scale']
         self._conf['is_train'] = is_train
         for phase, dataset in self._conf['datasets'].items():

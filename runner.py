@@ -13,41 +13,29 @@ import torch
 from config import Config
 
 import util
-from data import create_dataloader
 from data import Dataset
 
 import yaml
 
 
 class Runner:
-    def __init__(self, path,tf_log_dir='../tf_logger/'):
+    def __init__(self, path,tf_log_dir='./tf_log/'):
         self.config = Config(path).load().setMissingNone()
+        self._path = path
         self._tf_logger = None 
-        self._model = None
-        self._train_loader = None
-        self._val_loader = None
+        self.model = None
         self._tf_log_dir = tf_log_dir
-        # ! 训练过程计数
+
         self.current_step = 0
         self.start_epoch = 0 
         self.total_epochs = 0
         self.total_iters = 0
+        self.datasets = []
+        self.val_datasets = []
 
         self.resume_state = None
 
-        # ! 一个runner和它的配置静态绑定
-        if self.config['path']['resume_state']:  # resuming training
-            self.resume_state = torch.load(self.config['path']['resume_state'])
-            self.log('Resuming training from epoch: {}, iter: {}.'.format(
-                self.resume_state['epoch'], self.resume_state['iter']))
-            self.config.checkResume()
-            self.start_epoch = self.resume_state['epoch']
-            self.current_step = self.resume_state['iter']
-        else:  # training from scratch
-            util.mkdir_and_rename(self.config['path']['experiments_root'])  # rename old folder if exists
-            util.mkdirs((path for key, path in self.config['path'].items() if not key == 'experiments_root'
-                        and 'pretrain_model' not in key and 'resume' not in key))
-
+        self.checkResume()
     
     @property
     def tf_logger(self):
@@ -55,24 +43,15 @@ class Runner:
             from tensorboardX import SummaryWriter
             self._tf_logger = SummaryWriter(log_dir= self._tf_log_dir + self.config['name'])
         return self._tf_logger
-
+    
     @property
-    def model(self):
-        if not self._model:
-            self._model = SRRaGANModel(self.config)
-        return self._model
+    def path(self):
+        return self._path 
 
-    @property
-    def train_loader(self):
-        if not self._train_loader:
-            raise NotImplementedError('invoke prepare before utilizing train_loader and make sure datasets is loaded')
-        return self._train_loader
-
-    @property
-    def val_loader(self):
-        if not self._val_loader:
-            raise NotImplementedError('invoke prepare before utilizing self.val_loader and make sure datasets is loaded')
-        return self._val_loader
+    @path.setter 
+    def path(self,val):
+        self.config.load(path=val).setMissingNone()
+        self._path = val 
 
     
     def log(self,msg):
@@ -87,14 +66,33 @@ class Runner:
     def __str__(self):
         return 'current_step: {}, start_epoch: {}, total_epochs: {}, total_iters: {}'.format(self.current_step,self.start_epoch,self.total_epochs,self.total_iters)
 
+    def checkResume(self):
+        if self.config['path']['resume_state']:
+            self.resume_state = torch.load(self.config['path']['resume_state'])
+            self.log('Resuming training from epoch: {}, iter: {}.'.format(
+                self.resume_state['epoch'], self.resume_state['iter']))
+            self.config.checkResume()
+            self.start_epoch = self.resume_state['epoch']
+            self.current_step = self.resume_state['iter']
+        else:
+            util.mkdir_and_rename(self.config['path']['experiments_root'])  # rename old folder if exists
+            util.mkdirs((path for key, path in self.config['path'].items() if not key == 'experiments_root'
+                        and 'pretrain_model' not in key and 'resume' not in key))
 
+    def clear(self):
+        self.datasets = []
+        self.val_datasets = []
+        self.current_step = 0
+        self.start_epoch = 0 
+        self.total_epochs = 0
+        self.total_iters = 0
+        self.resume_state = None
 
 class TrainRunner(Runner):
     def __init__(self, path='config/train.yaml'):
         super().__init__(path)
 
     def prepare(self):
-
         seed = self.config['train']['manual_seed']
         if seed is None:
             seed = random.randint(1, 10000)
@@ -103,36 +101,38 @@ class TrainRunner(Runner):
 
         torch.backends.cudnn.benchmark = True
 
-        for phase, dataset_opt in self.config['datasets'].items():
-            if phase == 'train':
-                train_set = Dataset(dataset_opt)
-                train_size = int(math.ceil(len(train_set) / dataset_opt['batch_size']))
+        for cnf in self.config['datasets'].values():
+            ds = Dataset(cnf)
+            if ds.phase == 'train':
+                train_size = int(math.ceil(len(ds) / cnf['batch_size']))
                 self.log('Number of train images: {:,d}, iters: {:,d}'.format(
-                    len(train_set), train_size))
-                # ! params
+                    len(ds), train_size))
+
                 self.total_iters = int(self.config['train']['niter'])
                 self.total_epochs = int(math.ceil(self.total_iters / train_size))
                 
                 self.log('Total epochs needed: {:d} for iters {:,d}'.format(
                     self.total_epochs, self.total_iters))
-                self._train_loader = create_dataloader(train_set, dataset_opt)
-            elif phase == 'val':
-                val_set = Dataset(dataset_opt)
-                self._val_loader = create_dataloader(val_set, dataset_opt)
-                self.log('Number of val images in [{:s}]: {:d}'.format(dataset_opt['name'],
-                                                                        len(val_set)))
+                self.datasets.append(ds)
+            elif ds.phase == 'val':
+                self.val_datasets.append(ds)
+                self.log('Number of val images in [{:s}]: {:d}'.format(cnf['name'],
+                                                                    len(ds)))
+        self.model = SRRaGANModel(self.config)
+
     def run(self):
+        assert self.model is not None, "model not created"
+
         if self.start_epoch: self.model.resume_training(self.resume_state)
         self.log('Start training from epoch: {:d}, iter: {:d}'.format(self.start_epoch, self.current_step))
         for epoch in range(self.start_epoch, self.total_epochs):
-            for _, train_data in enumerate(self.train_loader):
+            for ds in self.datasets:
                 self.current_step += 1
                 if self.current_step > self.total_iters: break
                 
-                # update learning rate
                 self.model.update_learning_rate()
 
-                self.model.feed_data(train_data)
+                self.model.feed_data(ds.loader)
                 self.model.optimize_parameters(self.current_step)
 
                 # log
@@ -150,13 +150,13 @@ class TrainRunner(Runner):
                 if self.current_step % self.config['train']['val_freq'] == 0:
                     avg_psnr = 0.0
                     idx = 0
-                    for val_data in self.val_loader:
+                    for val_ds in self.val_datasets:
                         idx += 1
-                        img_name = os.path.splitext(os.path.basename(val_data['LR_path'][0]))[0]
+                        img_name = os.path.splitext(os.path.basename(val_ds['LR_path'][0]))[0]
                         img_dir = os.path.join(self.config['path']['val_images'], img_name)
                         util.mkdir(img_dir)
 
-                        self.model.feed_data(val_data)
+                        self.model.feed_data(val_ds.loader)
                         self.model.test()
 
                         visuals = self.model.get_current_visuals()
@@ -178,11 +178,10 @@ class TrainRunner(Runner):
 
                     avg_psnr = avg_psnr / idx
 
-                    # log
                     self.log('# Validation # PSNR: {:.4e}'.format(avg_psnr))
                     self.log('<epoch:{:3d}, iter:{:8,d}> psnr: {:.4e}'.format(
                         epoch, self.current_step, avg_psnr))
-                    # tensorboard self.logger
+
                     if self.config['use_tb_logger'] and 'debug' not in self.config['name']:
                         self.tf_logger.add_scalar('psnr', avg_psnr, self.current_step)
 
@@ -195,6 +194,7 @@ class TrainRunner(Runner):
         self.log('Saving the final self.model.')
         self.model.save('latest')
         self.log('End of training.')
+
 
 
 if __name__ == "__main__":

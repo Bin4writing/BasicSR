@@ -1,19 +1,5 @@
 import torch.utils.data
 
-def create_dataloader(dataset, dataset_opt):
-    phase = dataset_opt['phase']
-    if phase == 'train':
-        return torch.utils.data.DataLoader(
-            dataset,
-            batch_size=dataset_opt['batch_size'],
-            shuffle=dataset_opt['use_shuffle'],
-            num_workers=dataset_opt['n_workers'],
-            drop_last=True,
-            pin_memory=True)
-    else:
-        return torch.utils.data.DataLoader(
-            dataset, batch_size=1, shuffle=False, num_workers=1, pin_memory=True)
-
 import os.path
 import random
 import numpy as np
@@ -26,14 +12,25 @@ import data.util as util
 
 class Dataset(TorchDataset):
 
-    def __init__(self, opt):
+    def __init__(self, cnf):
         super(Dataset, self).__init__()
-        self.opt = opt
+        self.phase = cnf['phase']
+        self.loader = torch.utils.data.DataLoader(
+            self,
+            batch_size=cnf['batch_size'],
+            shuffle=cnf['use_shuffle'],
+            num_workers=cnf['n_workers'],
+            drop_last=True,
+            pin_memory=True) if self.phase == 'train' else torch.utils.data.DataLoader(
+            self, batch_size=1, shuffle=False, num_workers=1, pin_memory=True)
+
+        self.cnf = cnf
         self.paths_LR = None
         self.paths_HR = None
+        self.name = cnf['name']
 
-        self.HR_env, self.paths_HR = util.get_image_paths(opt['data_type'], opt['dataroot_HR'])
-        self.LR_env, self.paths_LR = util.get_image_paths(opt['data_type'], opt['dataroot_LR'])
+        self.HR_env, self.paths_HR = util.get_image_paths(cnf['data_type'], cnf['dataroot_HR'])
+        self.LR_env, self.paths_LR = util.get_image_paths(cnf['data_type'], cnf['dataroot_LR'])
 
         assert self.paths_HR, 'Error: HR path is empty.'
         if self.paths_LR and self.paths_HR:
@@ -45,18 +42,18 @@ class Dataset(TorchDataset):
 
     def __getitem__(self, index):
         HR_path, LR_path = None, None
-        scale = self.opt['scale']
-        HR_size = self.opt['HR_size']
+        scale = self.cnf['scale']
+        HR_size = self.cnf['HR_size']
 
         # get HR image
         HR_path = self.paths_HR[index]
         img_HR = util.read_img(self.HR_env, HR_path)
         # modcrop in the validation / test phase
-        if self.opt['phase'] != 'train':
+        if self.cnf['phase'] != 'train':
             img_HR = util.modcrop(img_HR, scale)
         # change color space if necessary
-        if self.opt['color']:
-            img_HR = util.channel_convert(img_HR.shape[2], self.opt['color'], [img_HR])[0]
+        if self.cnf['color']:
+            img_HR = util.channel_convert(img_HR.shape[2], self.cnf['color'], [img_HR])[0]
 
         # get LR image
         if self.paths_LR:
@@ -64,7 +61,7 @@ class Dataset(TorchDataset):
             img_LR = util.read_img(self.LR_env, LR_path)
         else:  # down-sampling on-the-fly
             # randomly scale during training
-            if self.opt['phase'] == 'train':
+            if self.cnf['phase'] == 'train':
                 random_scale = random.choice(self.random_scale_list)
                 H_s, W_s, _ = img_HR.shape
 
@@ -86,7 +83,7 @@ class Dataset(TorchDataset):
             if img_LR.ndim == 2:
                 img_LR = np.expand_dims(img_LR, axis=2)
 
-        if self.opt['phase'] == 'train':
+        if self.cnf['phase'] == 'train':
             # if the image size is too small
             H, W, _ = img_HR.shape
             if H < HR_size or W < HR_size:
@@ -108,12 +105,12 @@ class Dataset(TorchDataset):
             img_HR = img_HR[rnd_h_HR:rnd_h_HR + HR_size, rnd_w_HR:rnd_w_HR + HR_size, :]
 
             # augmentation - flip, rotate
-            img_LR, img_HR = util.augment([img_LR, img_HR], self.opt['use_flip'], \
-                self.opt['use_rot'])
+            img_LR, img_HR = util.augment([img_LR, img_HR], self.cnf['use_flip'], \
+                self.cnf['use_rot'])
 
         # change color space if necessary
-        if self.opt['color']:
-            img_LR = util.channel_convert(C, self.opt['color'], [img_LR])[0] # TODO during val no definetion
+        if self.cnf['color']:
+            img_LR = util.channel_convert(C, self.cnf['color'], [img_LR])[0] # TODO during val no definetion
 
         # BGR to RGB, HWC to CHW, numpy to tensor
         if img_HR.shape[2] == 3:
