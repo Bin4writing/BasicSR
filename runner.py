@@ -14,7 +14,7 @@ from config import Config
 
 import util
 from data import create_dataloader
-from data.LRHR_dataset import LRHRDataset
+from data import Dataset
 
 import yaml
 
@@ -36,18 +36,17 @@ class Runner:
         self.resume_state = None
 
         # ! 一个runner和它的配置静态绑定
-        if True:
-            if self.config['path']['resume_state']:  # resuming training
-                self.resume_state = torch.load(self.config['path']['resume_state'])
-                self.log('Resuming training from epoch: {}, iter: {}.'.format(
-                    self.resume_state['epoch'], self.resume_state['iter']))
-                self.config.checkResume()
-                self.start_epoch = self.resume_state['epoch']
-                self.current_step = self.resume_state['iter']
-            else:  # training from scratch
-                util.mkdir_and_rename(self.config['path']['experiments_root'])  # rename old folder if exists
-                util.mkdirs((path for key, path in self.config['path'].items() if not key == 'experiments_root'
-                            and 'pretrain_model' not in key and 'resume' not in key))
+        if self.config['path']['resume_state']:  # resuming training
+            self.resume_state = torch.load(self.config['path']['resume_state'])
+            self.log('Resuming training from epoch: {}, iter: {}.'.format(
+                self.resume_state['epoch'], self.resume_state['iter']))
+            self.config.checkResume()
+            self.start_epoch = self.resume_state['epoch']
+            self.current_step = self.resume_state['iter']
+        else:  # training from scratch
+            util.mkdir_and_rename(self.config['path']['experiments_root'])  # rename old folder if exists
+            util.mkdirs((path for key, path in self.config['path'].items() if not key == 'experiments_root'
+                        and 'pretrain_model' not in key and 'resume' not in key))
 
     
     @property
@@ -106,7 +105,7 @@ class TrainRunner(Runner):
 
         for phase, dataset_opt in self.config['datasets'].items():
             if phase == 'train':
-                train_set = LRHRDataset(dataset_opt)
+                train_set = Dataset(dataset_opt)
                 train_size = int(math.ceil(len(train_set) / dataset_opt['batch_size']))
                 self.log('Number of train images: {:,d}, iters: {:,d}'.format(
                     len(train_set), train_size))
@@ -118,7 +117,7 @@ class TrainRunner(Runner):
                     self.total_epochs, self.total_iters))
                 self._train_loader = create_dataloader(train_set, dataset_opt)
             elif phase == 'val':
-                val_set = LRHRDataset(dataset_opt)
+                val_set = Dataset(dataset_opt)
                 self._val_loader = create_dataloader(val_set, dataset_opt)
                 self.log('Number of val images in [{:s}]: {:d}'.format(dataset_opt['name'],
                                                                         len(val_set)))

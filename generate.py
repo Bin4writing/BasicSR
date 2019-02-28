@@ -5,7 +5,7 @@ import os
 import util as util
 from data import create_dataloader
 from models.SRRaGAN_model import SRRaGANModel
-from data.LRHR_dataset import LRHRDataset
+from data import Dataset
 
 
 
@@ -45,7 +45,7 @@ class Generator():
         data_loaders = []
         for phase, dataset_opt in sorted(self.config['datasets'].items()):
             self.log(dataset_opt)
-            data_set = LRHRDataset(dataset_opt)
+            data_set = Dataset(dataset_opt)
             data_loader = create_dataloader(data_set, dataset_opt)
             self.log('Number of images in [{:s}]: {:d}'.format(self._name, len(data_set)))
             data_loaders.append(data_loader)

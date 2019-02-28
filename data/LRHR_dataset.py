@@ -3,19 +3,15 @@ import random
 import numpy as np
 import cv2
 import torch
+import torch.utils.data.Dataset as TorchDataset
 import torch.utils.data as data
 import data.util as util
 
 
-class LRHRDataset(data.Dataset):
-    '''
-    Read LR and HR image pairs.
-    If only HR image is provided, generate LR image on-the-fly.
-    The pair is ensured by 'sorted' function, so please check the name convention.
-    '''
+class Dataset(TorchDataset):
 
     def __init__(self, opt):
-        super(LRHRDataset, self).__init__()
+        super(Dataset, self).__init__()
         self.opt = opt
         self.paths_LR = None
         self.paths_HR = None
