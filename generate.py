@@ -48,7 +48,7 @@ class Generator():
         for cnf in sorted(self.config['datasets'].values()):
             self.log(cnf)
             ds = Dataset(cnf)
-            self.log('Number of images in [{:s}]: {:d}'.format(ds.paths_HR, len(ds)))
+            self.log('Number of images in [{:s}]: {:d}'.format(ds.cnf['dataroot_LR'], len(ds)))
             self.datasets.append(ds)
         return self
 
@@ -59,7 +59,7 @@ class Generator():
 
     def run(self):
         for ds in self.datasets:
-            self.log('\nGenerating from [{:s}]...'.format(self.ds.paths_HR))
+            self.log('\nGenerating from [{:s}]...'.format(ds.cnf['dataroot_LR']))
             ds_dir = os.path.join(self.result_dir,self.model.name,ds.name)
             util.mkdir(ds_dir)
             for data in ds.loader:

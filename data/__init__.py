@@ -25,8 +25,6 @@ class Dataset(TorchDataset):
             self, batch_size=1, shuffle=False, num_workers=1, pin_memory=True)
 
         self.cnf = cnf
-        self.paths_LR = None
-        self.paths_HR = None
         self.name = cnf['name']
 
         self.HR_env, self.paths_HR = util.get_image_paths(cnf['data_type'], cnf['dataroot_HR'])
