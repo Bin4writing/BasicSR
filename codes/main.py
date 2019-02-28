@@ -237,6 +237,9 @@ class Console(cmd.Cmd):
             return
         self.dataset.name = name_str
         self.generator.name = name_str
+        train_conf = self.runner.config['datasets']['train']
+        train_conf['dataroot_HR'] = self.dataset.img_sub_folder + '.lmdb'
+        train_conf['dataroot_LR'] = self.dataset.img_sub_bicLRx4_folder + '.lmdb'
 
     def help_load(self):
         print('\n'.join([
@@ -262,7 +265,12 @@ class Console(cmd.Cmd):
         print('\n'.join([
             'todo'
             ]))
-
+    def do_sub(self,size_str):
+        size_str = size_str.strip()
+        if not size_str:
+            self.dataset.sub()
+        else:
+            self.dataset.sub(crop_sz=int(size_str))
     def do_recover(self,line):
         self.generator.run()
 
@@ -277,6 +285,7 @@ class Console(cmd.Cmd):
             self.help_lmdb()
             return
         self.dataset.lmdb(type_str)
+        return True
 
     def help_lmdb(self):
         print('\n'.join([
