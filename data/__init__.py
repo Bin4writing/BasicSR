@@ -29,6 +29,9 @@ class Dataset(TorchDataset):
                 len(self.paths_LR), len(self.paths_HR))
 
         self.random_scale_list = [1]
+
+    
+    def createLoader(self):
         self.loader = torch_util.data.DataLoader(
             self,
             batch_size=cnf['batch_size'],
@@ -37,6 +40,7 @@ class Dataset(TorchDataset):
             drop_last=True,
             pin_memory=True) if self.phase == 'train' else torch_util.data.DataLoader(
             self, batch_size=1, shuffle=False, num_workers=1, pin_memory=True)
+        return self
 
     def __getitem__(self, index):
         HR_path, LR_path = None, None

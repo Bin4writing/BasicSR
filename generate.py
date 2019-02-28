@@ -38,7 +38,7 @@ class Generator():
     def prepare(self):
         for cnf in sorted(self.config['datasets'].values()):
             self.log(cnf)
-            ds = Dataset(cnf)
+            ds = Dataset(cnf).createLoader()
             self.log('Number of images in [{:s}]: {:d}'.format(ds.cnf['dataroot_LR'], len(ds)))
             self.datasets.append(ds)
         return self

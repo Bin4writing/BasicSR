@@ -102,7 +102,7 @@ class TrainRunner(Runner):
         torch.backends.cudnn.benchmark = True
 
         for cnf in self.config['datasets'].values():
-            ds = Dataset(cnf)
+            ds = Dataset(cnf).createLoader()
             if ds.phase == 'train':
                 train_size = int(math.ceil(len(ds) / cnf['batch_size']))
                 self.log('Number of train images: {:,d}, iters: {:,d}'.format(
