@@ -24,7 +24,7 @@ class Dataset(TorchDataset):
     def createLoader(self):
         self.loader = torch_util.data.DataLoader(
             self,
-            minibatch=self.cnf['minibatch'],
+            batch_size=self.cnf['minibatch'],
             shuffle=self.cnf['use_shuffle'],
             num_workers=self.cnf['n_workers'],
             drop_last=True,
