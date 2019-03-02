@@ -1,4 +1,3 @@
-
 """Encoding Data Parallel"""
 import threading
 import functools

@@ -133,7 +133,7 @@ class TrainRunner(Runner):
                             epoch, self.current_step, self.model.get_current_learning_rate())
                         for k, v in logs.items():
                             message += '{:s}: {:.4e} '.format(k, v)
-                            if self.config['use_tb_logger'] and 'debug' not in self.config['name']:
+                            if self.config['enable_tensorboard'] and 'debug' not in self.config['name']:
                                 self.tf_logger.add_scalar(k, v, self.current_step)
                         self.log(message)
 
@@ -167,7 +167,7 @@ class TrainRunner(Runner):
                         self.log('<epoch:{:3d}, iter:{:8,d}> psnr: {:.4e}'.format(
                             epoch, self.current_step, avg_ssim))
 
-                        if self.config['use_tb_logger'] and 'debug' not in self.config['name']:
+                        if self.config['enable_tensorboard'] and 'debug' not in self.config['name']:
                             self.tf_logger.add_scalar('psnr', avg_ssim, self.current_step)
 
                     if self.current_step % self.config['logger']['save_checkpoint_freq'] == 0:

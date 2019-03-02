@@ -72,7 +72,7 @@ class Config():
             results_root = os.path.join(self._conf['path']['root'], 'results', self._conf['name'])
             self._conf['path']['results_root'] = results_root
             self._conf['path']['log'] = results_root
-        self._conf['network_G']['scale'] = scale
+        self._conf['GAN']['scale'] = scale
 
         gpu_list = ','.join(str(x) for x in self._conf['gpu_ids'])
         os.environ['CUDA_VISIBLE_DEVICES'] = gpu_list
@@ -103,15 +103,10 @@ class Config():
 
     def checkResume(self):
         if self._conf['path']['resume_state']:
-            if self._conf['path']['pretrain_model_G'] or self._conf['path']['pretrain_model_D']:
-                print('resume training')
-
             state_idx = osp.basename(self._conf['path']['resume_state']).split('.')[0]
-            self._conf['path']['pretrain_model_G'] = osp.join(self._conf['path']['models'],
+            self._conf['GAN']['path'] = osp.join(self._conf['path']['models'],
                                                     '{}_G.pth'.format(state_idx))
-            print('Set [pretrain_model_G] to ' + self._conf['path']['pretrain_model_G'])
             if 'gan' in self._conf['model']:
                 self._conf['path']['pretrain_model_D'] = osp.join(self._conf['path']['models'],
                                                         '{}_D.pth'.format(state_idx))
-                print('Set [pretrain_model_D] to ' + self._conf['path']['pretrain_model_D'])
         return self

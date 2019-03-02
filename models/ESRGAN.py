@@ -36,7 +36,7 @@ class ESRGAN():
         train_cnf = cnf['train']
         self.train_cnf = train_cnf
 
-        cnf_net = cnf['network_G']
+        cnf_net = cnf['GAN']
         self.GAN = RRDBNet(in_nc=cnf_net['in_nc'], out_nc=cnf_net['out_nc'], nf=cnf_net['nf'],
             nb=cnf_net['nb'], gc=cnf_net['gc'], upscale=cnf_net['scale'], norm_type=cnf_net['norm_type'],
             act_type='leakyrelu', mode=cnf_net['mode'])
@@ -45,7 +45,7 @@ class ESRGAN():
             self.GAN.apply(weights_by(0.1))
         self.GAN = nn.DataParallel(self.GAN).to(self.device)
         if self.is_train:
-            cnf_net = cnf['network_D']
+            cnf_net = cnf['Discriminator']
             self.discriminator =Discriminator_VGG_128(in_nc=cnf_net['in_nc'], base_nf=cnf_net['nf'], \
                 norm_type=cnf_net['norm_type'], mode=cnf_net['mode'], act_type=cnf_net['act_type'])
             self.discriminator.apply(weights_by(1))
@@ -147,10 +147,10 @@ class ESRGAN():
     def get_current_log(self):
         return self.log_dict
     def load(self):
-        load_path_G = self.cnf['path']['pretrain_model_G']
+        load_path_G = self.cnf['GAN']['path']
         if load_path_G is not None:
             self.load_network(load_path_G, self.GAN)
-        load_path_D = self.cnf['path']['pretrain_model_D']
+        load_path_D = self.cnf['Discriminator']['path']
         if self.cnf['is_train'] and load_path_D is not None:
             self.load_network(load_path_D, self.discriminator)
 
@@ -165,7 +165,7 @@ class ESRGAN():
     def get_current_learning_rate(self):
         return self.schedulers[0].get_lr()[0]
 
-    def get_network_description(self, network):
+    def get_Discriminatorescription(self, network):
         '''Get the string and total parameters of the network'''
         if isinstance(network, nn.DataParallel):
             network = network.module

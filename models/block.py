@@ -59,11 +59,6 @@ class ResidualDenseBlock_5C(nn.Module):
         x5 = self.conv5(torch.cat((x, x1, x2, x3, x4), 1))
         return x5.mul(0.2) + x
 class RRDB(nn.Module):
-    '''
-    Residual in Residual Dense Block
-    (ESRGAN: Enhanced Super-Resolution Generative Adversarial Networks)
-    '''
-
     def __init__(self, nc, kernel_size=3, gc=32, stride=1, bias=True, pad_type='zero', \
             norm_type=None, act_type='leakyrelu', mode='CNA'):
         super(RRDB, self).__init__()
@@ -82,11 +77,6 @@ class RRDB(nn.Module):
 
 def pixelshuffle_block(in_nc, out_nc, upscale_factor=2, kernel_size=3, stride=1, bias=True, \
                         pad_type='zero', norm_type=None, act_type='relu'):
-    '''
-    Pixel shuffle layer
-    (Real-Time Single Image and Video Super-Resolution Using an Efficient Sub-Pixel Convolutional
-    Neural Network, CVPR17)
-    '''
     conv = conv_block(in_nc, out_nc * (upscale_factor ** 2), kernel_size, stride, bias=bias, \
                         pad_type=pad_type, norm_type=None, act_type=None)
     pixel_shuffle = nn.PixelShuffle(upscale_factor)
