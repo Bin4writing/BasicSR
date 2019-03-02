@@ -72,12 +72,12 @@ class ESRGAN():
             for k, v in self.GAN.named_parameters():
                 if v.requires_grad:
                     opp.append(v)
-            self.optimizer_G = torch.cnfim.Adam(opp, lr=train_cnf['lr_G'], \
+            self.optimizer_G = torch.optim.Adam(opp, lr=train_cnf['lr_G'], \
                 weight_decay=wd_G, betas=(train_cnf['beta1_G'], 0.999))
             self.optimizers.append(self.optimizer_G)
 
             wd_D = train_cnf['weight_decay_D'] if train_cnf['weight_decay_D'] else 0
-            self.optimizer_D = torch.cnfim.Adam(self.discriminator.parameters(), lr=train_cnf['lr_D'], \
+            self.optimizer_D = torch.optim.Adam(self.discriminator.parameters(), lr=train_cnf['lr_D'], \
                 weight_decay=wd_D, betas=(train_cnf['beta1_D'], 0.999))
             self.optimizers.append(self.optimizer_D)
 
@@ -91,7 +91,7 @@ class ESRGAN():
     def feed_data(self, data):
         self.var_L = data['LR'].to(self.device)
         self.var_H = data['HR'].to(self.device)
-    def cnfimize_parameters(self, step):
+    def optimize_parameters(self, step):
         for p in self.discriminator.parameters():
             p.requires_grad = False
 
