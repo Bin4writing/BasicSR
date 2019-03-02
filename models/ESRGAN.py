@@ -43,7 +43,7 @@ class ESRGAN():
         self.GAN = nn.DataParallel(self.GAN).to(self.device)
         if self.is_train:
             self.discriminator =Discriminator_VGG_128(in_nc=3, base_nf=64, \
-                norm_type='batch', mode='CNA', activation=leakyrelu)
+                norm_type='batch', mode='CNA', activation='leakyrelu')
             self.discriminator.apply(weights_by(1))
             self.discriminator = nn.DataParallel(self.discriminator).to(self.device)
             self.GAN.train()
