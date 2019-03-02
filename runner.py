@@ -86,10 +86,7 @@ class TrainRunner(Runner):
         super().__init__(path)
 
     def prepare(self):
-        seed = self.config['train']['manual_seed']
-        if seed is None:
-            seed = random.randint(1, 10000)
-        self.log('Random seed: {}'.format(seed))
+        seed = random.randint(1, 10000)
         util.set_random_seed(seed)
 
         torch.backends.cudnn.benchmark = True
@@ -101,7 +98,7 @@ class TrainRunner(Runner):
                 self.log('Number of train images: {:,d}, iters: {:,d}'.format(
                     len(ds), train_size))
 
-                self.total_iters = int(self.config['train']['niter'])
+                self.total_iters = int(self.config['total_iters'])
                 self.total_epochs = int(math.ceil(self.total_iters / train_size))
                 self.log('Total epochs needed: {:d} for iters {:,d}'.format(
                     self.total_epochs, self.total_iters))

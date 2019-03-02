@@ -70,7 +70,7 @@ class Config():
             self._conf['result_dir'] = result_dir
             self._conf['log'] = result_dir
 
-        gpu_list = ','.join(str(x) for x in self._conf['gpu_ids'])
+        gpu_list = ','.join(str(x) for x in self._conf['GPUs'])
         os.environ['CUDA_VISIBLE_DEVICES'] = gpu_list
         return self
 

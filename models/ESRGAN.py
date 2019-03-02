@@ -33,8 +33,6 @@ class ESRGAN():
         self.is_train = cnf['is_train']
         self.schedulers = []
         self.optimizers = []
-        train_cnf = cnf['train']
-        self.train_cnf = train_cnf
 
         cnf_net = cnf['GAN']
         self.GAN = RRDBNet(in_nc=cnf_net['in_nc'], out_nc=cnf_net['out_nc'], nf=cnf_net['nf'],
@@ -63,31 +61,31 @@ class ESRGAN():
             self.feature_extractor.eval()
             self.feature_extractor = self.feature_extractor.to(self.device)
             self.cri_gan = nn.BCEWithLogitsLoss().to(self.device)
-            self.l_gan_w = train_cnf['gan_weight']
-            self.D_update_ratio = train_cnf['D_update_ratio'] if train_cnf['D_update_ratio'] else 1
-            self.D_init_iters = train_cnf['D_init_iters'] if train_cnf['D_init_iters'] else 0
+            self.l_gan_w = self.cnf['gan_weight']
+            self.D_update_ratio = self.cnf['D_update_ratio'] if self.cnf['D_update_ratio'] else 1
+            self.D_init_iters = self.cnf['D_init_iters'] if self.cnf['D_init_iters'] else 0
 
-            wd_G = train_cnf['weight_decay_G'] if train_cnf['weight_decay_G'] else 0
+            wd_G = self.cnf['weight_decay_G'] if self.cnf['weight_decay_G'] else 0
             opp = []
             for k, v in self.GAN.named_parameters():
                 if v.requires_grad:
                     opp.append(v)
-            self.optimizer_G = torch.optim.Adam(opp, lr=train_cnf['lr_G'], \
-                weight_decay=wd_G, betas=(train_cnf['beta1_G'], 0.999))
+            self.optimizer_G = torch.optim.Adam(opp, lr=self.cnf['lr_G'], \
+                weight_decay=wd_G, betas=(self.cnf['beta1_G'], 0.999))
             self.optimizers.append(self.optimizer_G)
 
-            wd_D = train_cnf['weight_decay_D'] if train_cnf['weight_decay_D'] else 0
-            self.optimizer_D = torch.optim.Adam(self.discriminator.parameters(), lr=train_cnf['lr_D'], \
-                weight_decay=wd_D, betas=(train_cnf['beta1_D'], 0.999))
+            wd_D = self.cnf['weight_decay_D'] if self.cnf['weight_decay_D'] else 0
+            self.optimizer_D = torch.optim.Adam(self.discriminator.parameters(), lr=self.cnf['lr_D'], \
+                weight_decay=wd_D, betas=(self.cnf['beta1_D'], 0.999))
             self.optimizers.append(self.optimizer_D)
 
             for optimizer in self.optimizers:
                 self.schedulers.append(lr_scheduler.MultiStepLR(optimizer, \
-                    train_cnf['lr_steps'], train_cnf['lr_gamma']))
+                    self.cnf['lr_steps'], self.cnf['lr_gamma']))
 
             self.log_dict = OrderedDict()
-            self.l_pix_w = train_cnf['pixel_weight']
-            self.l_fea_w = train_cnf['feature_weight']
+            self.l_pix_w = self.cnf['pixel_weight']
+            self.l_fea_w = self.cnf['feature_weight']
     def feed_data(self, data):
         self.var_L = data['LR'].to(self.device)
         self.var_H = data['HR'].to(self.device)
@@ -98,7 +96,7 @@ class ESRGAN():
         self.optimizer_G.zero_grad()
 
         self.fake_H = self.GAN(self.var_L)
-        minibatch = self.train_cnf['minibatch']
+        minibatch = self.self.cnf['minibatch']
         l_g_total = 0
         if step % self.D_update_ratio == 0 and step > self.D_init_iters:
             l_g_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.var_H)

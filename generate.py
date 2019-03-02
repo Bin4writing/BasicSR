@@ -58,11 +58,8 @@ class Generator():
 
                 sr_img = util.tensor2img(self.model.generate(data))
 
-                suffix = self.config['suffix']
-                if suffix:
-                    save_img_path = os.path.join(ds_dir, img_name + suffix + '.png')
-                else:
-                    save_img_path = os.path.join(ds_dir, img_name + '.png')
+
+                save_img_path = os.path.join(ds_dir, img_name + '.png')
                 util.save_img(sr_img, save_img_path)
         return self
 if __name__ == '__main__':
