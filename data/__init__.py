@@ -29,7 +29,7 @@ class Dataset(TorchDataset):
             num_workers=self.cnf['n_workers'],
             drop_last=True,
             pin_memory=True) if self.phase == 'train' else torch_util.data.DataLoader(
-            self, minibatch=1, shuffle=False, num_workers=1, pin_memory=True)
+            self, batch_size=1, shuffle=False, num_workers=1, pin_memory=True)
         return self
 
     def __getitem__(self, index):
