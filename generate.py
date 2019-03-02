@@ -3,7 +3,7 @@ from config import Config
 
 import os
 import util as util
-from models.SRRaGAN_model import SRRaGANModel
+from models.ESRGAN import ESRGAN
 from data import Dataset
 
 class Generator():
@@ -24,7 +24,7 @@ class Generator():
         self.result_dir = self.config['path']['results_root']
 
     def model_with(self,conf):
-        return SRRaGANModel(conf)
+        return ESRGAN(conf)
 
     @property
     def model(self):
