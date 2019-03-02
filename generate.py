@@ -9,7 +9,7 @@ class Generator():
         self.config = Config(path).load(is_train=False).setMissingNone()
         self._path = path
         self._model = None
-        self.result_dir = self.config['results_root']
+        self.result_dir = self.config['result_dir']
         self.datasets = []
 
     @property
@@ -19,7 +19,7 @@ class Generator():
     def path(self,val):
         self._path = val
         self.config.load(is_train=False,path=val).setMissingNone()
-        self.result_dir = self.config['results_root']
+        self.result_dir = self.config['result_dir']
 
     def model_with(self,conf):
         return ESRGAN(conf)

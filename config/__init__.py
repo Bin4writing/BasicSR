@@ -62,16 +62,16 @@ class Config():
             if path and key in self._conf['path']:
                 self._conf['path'][key] = os.path.expanduser(path)
         if is_train:
-            experiments_root = os.path.join(self._conf['path']['root'], 'experiments', self._conf['name'])
+            experiments_root = os.path.join(self._conf['root'], 'experiments', self._conf['name'])
             self._conf['path']['experiments_root'] = experiments_root
             self._conf['path']['models'] = os.path.join(experiments_root, 'models')
             self._conf['path']['training_state'] = os.path.join(experiments_root, 'training_state')
             self._conf['path']['log'] = experiments_root
             self._conf['path']['val_images'] = os.path.join(experiments_root, 'val_images')
         else:
-            results_root = os.path.join(self._conf['path']['root'], 'results', self._conf['name'])
-            self._conf['path']['results_root'] = results_root
-            self._conf['path']['log'] = results_root
+            result_dir = os.path.join(self._conf['root'], 'results', self._conf['name'])
+            self._conf['result_dir'] = result_dir
+            self._conf['path']['log'] = result_dir
         self._conf['GAN']['scale'] = scale
 
         gpu_list = ','.join(str(x) for x in self._conf['gpu_ids'])
