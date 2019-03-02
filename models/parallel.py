@@ -135,14 +135,14 @@ class DataParallelCriterion(DataParallel):
 
         return self.gather(outputs, self.output_device)
 def _criterion_parallel_apply(modules, inputs, targets, kwargs_tup=None, devices=None):
-    assert len(modules) == len(inputs)
-    assert len(targets) == len(inputs)
+
+
     if kwargs_tup:
-        assert len(modules) == len(kwargs_tup)
+
     else:
         kwargs_tup = ({},) * len(modules)
     if devices is not None:
-        assert len(modules) == len(devices)
+
     else:
         devices = [None] * len(modules)
 
@@ -227,7 +227,7 @@ def patch_replication_callback(data_parallel):
         > sync_bn = DataParallelWithCallback(sync_bn, device_ids=[0, 1])
     """
 
-    assert isinstance(data_parallel, DataParallel)
+
 
     old_replicate = data_parallel.replicate
 

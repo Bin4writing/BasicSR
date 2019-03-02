@@ -36,7 +36,9 @@ class NoneDict(dict):
 class Config():
     def __init__(self, path):
         self.path = path
-        self._conf = {}
+        self._conf = {
+            'root': os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        }
     def load(self,is_train=True,path=None):
         if path: self.path = path
         with open(self.path,'r',encoding='utf-8') as f:
@@ -46,30 +48,27 @@ class Config():
             phase = phase.split('_')[0]
             dataset['phase'] = phase
             is_lmdb = False
-            if 'dataroot_HR' in dataset and dataset['dataroot_HR'] is not None:
-                dataset['dataroot_HR'] = os.path.expanduser(dataset['dataroot_HR'])
-                if dataset['dataroot_HR'].endswith('lmdb'):
+            if 'hr_dir' in dataset and dataset['hr_dir'] is not None:
+                dataset['hr_dir'] = os.path.expanduser(dataset['hr_dir'])
+                if dataset['hr_dir'].endswith('lmdb'):
                     is_lmdb = True
-            if 'dataroot_LR' in dataset and dataset['dataroot_LR'] is not None:
-                dataset['dataroot_LR'] = os.path.expanduser(dataset['dataroot_LR'])
-                if dataset['dataroot_LR'].endswith('lmdb'):
+            if 'lr_dir' in dataset and dataset['lr_dir'] is not None:
+                dataset['lr_dir'] = os.path.expanduser(dataset['lr_dir'])
+                if dataset['lr_dir'].endswith('lmdb'):
                     is_lmdb = True
             dataset['data_type'] = 'lmdb' if is_lmdb else 'img'
 
-        for key, path in self._conf['path'].items():
-            if path and key in self._conf['path']:
-                self._conf['path'][key] = os.path.expanduser(path)
         if is_train:
             experiments_root = os.path.join(self._conf['root'], 'experiments', self._conf['name'])
-            self._conf['path']['experiments_root'] = experiments_root
-            self._conf['path']['models'] = os.path.join(experiments_root, 'models')
-            self._conf['path']['training_state'] = os.path.join(experiments_root, 'training_state')
-            self._conf['path']['log'] = experiments_root
-            self._conf['path']['val_images'] = os.path.join(experiments_root, 'val_images')
+            self._conf['experiments_root'] = experiments_root
+            self._conf['models'] = os.path.join(experiments_root, 'models')
+            self._conf['training_state'] = os.path.join(experiments_root, 'training_state')
+            self._conf['log'] = experiments_root
+            self._conf['val_images'] = os.path.join(experiments_root, 'val_images')
         else:
             result_dir = os.path.join(self._conf['root'], 'results', self._conf['name'])
             self._conf['result_dir'] = result_dir
-            self._conf['path']['log'] = result_dir
+            self._conf['log'] = result_dir
 
         gpu_list = ','.join(str(x) for x in self._conf['gpu_ids'])
         os.environ['CUDA_VISIBLE_DEVICES'] = gpu_list
@@ -99,11 +98,11 @@ class Config():
         return self
 
     def checkResume(self):
-        if self._conf['path']['resume_state']:
-            state_idx = osp.basename(self._conf['path']['resume_state']).split('.')[0]
-            self._conf['GAN']['path'] = osp.join(self._conf['path']['models'],
+        if self._conf['resume_state']:
+            state_idx = osp.basename(self._conf['resume_state']).split('.')[0]
+            self._conf['GAN']['path'] = osp.join(self._conf['models'],
                                                     '{}_G.pth'.format(state_idx))
             if 'gan' in self._conf['model']:
-                self._conf['path']['pretrain_model_D'] = osp.join(self._conf['path']['models'],
+                self._conf['Discriminator']['path'] = osp.join(self._conf['models'],
                                                         '{}_D.pth'.format(state_idx))
         return self

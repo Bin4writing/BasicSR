@@ -98,7 +98,7 @@ class ESRGAN():
         self.optimizer_G.zero_grad()
 
         self.fake_H = self.GAN(self.var_L)
-        batch_size = self.train_cnf['batch_size']
+        minibatch = self.train_cnf['minibatch']
         l_g_total = 0
         if step % self.D_update_ratio == 0 and step > self.D_init_iters:
             l_g_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.var_H)
@@ -203,8 +203,8 @@ class ESRGAN():
         '''Resume the optimizers and schedulers for training'''
         resume_optimizers = resume_state['optimizers']
         resume_schedulers = resume_state['schedulers']
-        assert len(resume_optimizers) == len(self.optimizers), 'Wrong lengths of optimizers'
-        assert len(resume_schedulers) == len(self.schedulers), 'Wrong lengths of schedulers'
+
+
         for i, o in enumerate(resume_optimizers):
             self.optimizers[i].load_state_dict(o)
         for i, s in enumerate(resume_schedulers):

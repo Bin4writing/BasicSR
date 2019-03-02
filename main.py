@@ -209,8 +209,8 @@ class Console(cmd.Cmd):
         self.dataset.name = name_str
         self.generator.name = name_str
         train_conf = self.runner.config['datasets']['train']
-        train_conf['dataroot_HR'] = self.dataset.img_sub_folder + '.lmdb'
-        train_conf['dataroot_LR'] = self.dataset.img_sub_bicLRx4_folder + '.lmdb'
+        train_conf['hr_dir'] = self.dataset.img_sub_folder + '.lmdb'
+        train_conf['lr_dir'] = self.dataset.img_sub_bicLRx4_folder + '.lmdb'
 
     def help_load(self):
         print('\n'.join([

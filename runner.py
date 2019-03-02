@@ -60,17 +60,17 @@ class Runner:
         return 'current_step: {}, start_epoch: {}, total_epochs: {}, total_iters: {}'.format(self.current_step,self.start_epoch,self.total_epochs,self.total_iters)
 
     def checkResume(self):
-        if self.config['path']['resume_state']:
-            self.resume_state = torch.load(self.config['path']['resume_state'])
+        if self.config['resume_state']:
+            self.resume_state = torch.load(self.config['resume_state'])
             self.log('Resuming training from epoch: {}, iter: {}.'.format(
                 self.resume_state['epoch'], self.resume_state['iter']))
             self.config.checkResume()
             self.start_epoch = self.resume_state['epoch']
             self.current_step = self.resume_state['iter']
         else:
-            util.mkdir_and_rename(self.config['path']['experiments_root'])  # rename old folder if exists
-            util.mkdirs((path for key, path in self.config['path'].items() if not key == 'experiments_root'
-                        and 'pretrain_model' not in key and 'resume' not in key))
+            util.mkdir_and_rename(self.config['experiments_root'])  # rename old folder if exists
+            # util.mkdirs((path for key, path in self.config['path'].items() if not key == 'experiments_root'
+            #             and 'pretrain_model' not in key and 'resume' not in key))
 
     def clear(self):
         self.datasets = []
@@ -97,7 +97,7 @@ class TrainRunner(Runner):
         for cnf in self.config['datasets'].values():
             ds = Dataset(cnf).createLoader()
             if ds.phase == 'train':
-                train_size = int(math.ceil(len(ds) / cnf['batch_size']))
+                train_size = int(math.ceil(len(ds) / cnf['minibatch']))
                 self.log('Number of train images: {:,d}, iters: {:,d}'.format(
                     len(ds), train_size))
 
@@ -113,7 +113,7 @@ class TrainRunner(Runner):
         self.model = ESRGAN(self.config)
 
     def run(self):
-        assert self.model is not None, "model not created"
+
 
         if self.start_epoch: self.model.resume_training(self.resume_state)
         self.log('Start training from epoch: {:d}, iter: {:d}'.format(self.start_epoch, self.current_step))
@@ -127,7 +127,7 @@ class TrainRunner(Runner):
                     self.model.feed_data(data)
                     self.model.optimize_parameters(self.current_step)
 
-                    if self.current_step % self.config['logger']['print_freq'] == 0:
+                    if self.current_step % 500 == 0:
                         logs = self.model.get_current_log()
                         message = '<epoch:{:3d}, iter:{:8,d}, lr:{:.3e}> '.format(
                             epoch, self.current_step, self.model.get_current_learning_rate())
@@ -137,14 +137,14 @@ class TrainRunner(Runner):
                                 self.tf_logger.add_scalar(k, v, self.current_step)
                         self.log(message)
 
-                    if self.current_step % self.config['train']['val_freq'] == 0:
+                    if self.current_step % 5000 == 0:
                         avg_ssim = 0.0
                         idx = 0
                         for val_ds in self.val_datasets:
                             for val_data in val_ds.loader:
                                 idx += 1
                                 img_name = os.path.splitext(os.path.basename(val_ds['LR_path'][0]))[0]
-                                img_dir = os.path.join(self.config['path']['val_images'], img_name)
+                                img_dir = os.path.join(self.config['val_images'], img_name)
                                 util.mkdir(img_dir)
 
                                 self.model.feed_data(val_ds.loader)
@@ -170,7 +170,7 @@ class TrainRunner(Runner):
                         if self.config['enable_tensorboard'] and 'debug' not in self.config['name']:
                             self.tf_logger.add_scalar('psnr', avg_ssim, self.current_step)
 
-                    if self.current_step % self.config['logger']['save_checkpoint_freq'] == 0:
+                    if self.current_step % 5000 == 0:
                         self.log('Saving models and training states.')
                         self.model.save(self.current_step)
                         self.model.save_training_state(epoch, self.current_step)
