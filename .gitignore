@@ -1,16 +1,16 @@
-# folder
+
 .vscode
 **/__pycache__
 experiments/**/*
 experiments/**/*
-# !experiments/pretrained_models/SRResNet_bicx4_in3nf64nb16.pth
+
 !experiments/pretrained_models/README.md
 **/*.pth
 **/*.state
 results/**
 tf_logger/**/*
 
-# file type
+
 *.svg
 *.pyc
 *.t7
@@ -18,7 +18,7 @@ tf_logger/**/*
 *.mat
 *.npy
 
-# latex
+
 *.aux
 *.bbl
 *.blg

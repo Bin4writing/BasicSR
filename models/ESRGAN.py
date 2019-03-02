@@ -3,7 +3,28 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 from torch.optim import lr_scheduler
-import models.networks as networks
+from torch.nn import init
+import functools
+from models.architecture import VGGFeatureExtractor,RRDBNet,Discriminator_VGG_128
+
+
+def weights_by(scale=1):
+    def helper(m):
+        classname = m.__class__.__name__
+        if classname.find('Conv') != -1:
+            init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
+            m.weight.data *= scale
+            if m.bias is not None:
+                m.bias.data.zero_()
+        elif classname.find('Linear') != -1:
+            init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
+            m.weight.data *= scale
+            if m.bias is not None:
+                m.bias.data.zero_()
+        elif classname.find('BatchNorm2d') != -1:
+            init.constant_(m.weight.data, 1.0)
+            init.constant_(m.bias.data, 0.0)
+    return helper
 
 class ESRGAN():
     def __init__(self, opt):
@@ -16,9 +37,20 @@ class ESRGAN():
         train_opt = opt['train']
         self.train_opt = train_opt
         # define networks and load pretrained models
-        self.netG = networks.define_G(opt).to(self.device)  # G
+        opt_net = opt['network_G']
+        self.netG = arch.RRDBNet(in_nc=opt_net['in_nc'], out_nc=opt_net['out_nc'], nf=opt_net['nf'],
+            nb=opt_net['nb'], gc=opt_net['gc'], upscale=opt_net['scale'], norm_type=opt_net['norm_type'],
+            act_type='leakyrelu', mode=opt_net['mode'])
+
+        if opt['is_train']:
+            self.netG.apply(weights_by(0.1))
+        self.netG = nn.DataParallel(self.netG).to(self.device)
         if self.is_train:
-            self.netD = networks.define_D(opt).to(self.device)  # D
+            opt_net = opt['network_D']
+            netD = arch.Discriminator_VGG_128(in_nc=opt_net['in_nc'], base_nf=opt_net['nf'], \
+                norm_type=opt_net['norm_type'], mode=opt_net['mode'], act_type=opt_net['act_type'])
+            netD.apply(weights_by(1))
+            netD = nn.DataParallel(self.netD).to(self.device)
             self.netG.train()
             self.netD.train()
         self.load()  # load G and D if needed
@@ -27,7 +59,11 @@ class ESRGAN():
         if self.is_train:
             self.cri_pix = nn.L1Loss().to(self.device)
             self.cri_fea = nn.L1Loss().to(self.device)
-            self.netF = networks.define_F(opt).to(self.device)
+            self.netF = arch.VGGFeatureExtractor(feature_layer=34, \
+                device=self.device)
+            self.netF = nn.DataParallel(self.netF)
+            self.netF.eval()
+            self.netF = self.netF.to(self.device)
             self.cri_gan = nn.BCEWithLogitsLoss().to(self.device)
             self.l_gan_w = train_opt['gan_weight']
             self.D_update_ratio = train_opt['D_update_ratio'] if train_opt['D_update_ratio'] else 1

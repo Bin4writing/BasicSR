@@ -1,11 +1,11 @@
-##+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-## Created by: Hang Zhang, Rutgers University, Email: zhang.hang@rutgers.edu
-## Modified by Thomas Wolf, HuggingFace Inc., Email: thomas@huggingface.co
-## Copyright (c) 2017-2018
-##
-## This source code is licensed under the MIT-style license found in the
-## LICENSE file in the root directory of this source tree
-##+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+
+
+
+
+
 
 """Encoding Data Parallel"""
 import threading
@@ -202,9 +202,9 @@ def _criterion_parallel_apply(modules, inputs, targets, kwargs_tup=None, devices
             raise output
         outputs.append(output)
     return outputs
-###########################################################################
-# Adapted from Synchronized-BatchNorm-PyTorch.
-# https://github.com/vacancy/Synchronized-BatchNorm-PyTorch
+
+
+
 #
 class CallbackContext(object):
     pass

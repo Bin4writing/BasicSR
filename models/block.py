@@ -35,21 +35,14 @@ def conv_block(inputNC, outputNC, kernel_size, stride=1, dilation=1, groups=1, b
         a = nn.LeakyReLU(True)
     n = nn.BatchNorm2d(outputNC, affine=True) if norm_type else None
     return BlockSequent(p, c, n, a)
-####################
-# Useful blocks
-####################
+
+
+
 
 class ResidualDenseBlock_5C(nn.Module):
-    '''
-    Residual Dense Block
-    style: 5 convs
-    The core module of paper: (Residual Dense Network for Image Super-Resolution, CVPR 18)
-    '''
-
     def __init__(self, nc, kernel_size=3, gc=32, stride=1, bias=True, pad_type='zero', \
             norm_type=None, act_type='leakyrelu', mode='CNA'):
         super(ResidualDenseBlock_5C, self).__init__()
-        # gc: growth channel, i.e. intermediate channels
         self.conv1 = conv_block(nc, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
             norm_type=norm_type, act_type=act_type, mode=mode)
         self.conv2 = conv_block(nc+gc, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
@@ -58,10 +51,8 @@ class ResidualDenseBlock_5C(nn.Module):
             norm_type=norm_type, act_type=act_type, mode=mode)
         self.conv4 = conv_block(nc+3*gc, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
             norm_type=norm_type, act_type=act_type, mode=mode)
-
-        last_act = None
         self.conv5 = conv_block(nc+4*gc, nc, 3, stride, bias=bias, pad_type=pad_type, \
-            norm_type=norm_type, act_type=last_act, mode=mode)
+            norm_type=norm_type, act_type=None, mode=mode)
 
     def forward(self, x):
         x1 = self.conv1(x)
@@ -91,9 +82,9 @@ class RRDB(nn.Module):
         out = self.RDB2(out)
         out = self.RDB3(out)
         return out.mul(0.2) + x
-####################
-# Upsampler
-####################
+
+
+
 def pixelshuffle_block(in_nc, out_nc, upscale_factor=2, kernel_size=3, stride=1, bias=True, \
                         pad_type='zero', norm_type=None, act_type='relu'):
     '''

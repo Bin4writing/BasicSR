@@ -8,9 +8,9 @@ import random
 import torch
 import logging
 
-####################
-# miscellaneous
-####################
+
+
+
 
 def get_timestamp():
     return datetime.now().strftime('%y%m%d-%H%M%S')
@@ -28,9 +28,9 @@ def set_random_seed(seed):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-####################
-# image convert
-####################
+
+
+
 def tensor2img(tensor, out_type=np.uint8, min_max=(0, 1)):
     '''
     Converts a torch Tensor into an image Numpy array
@@ -67,9 +67,9 @@ def mkdir_and_rename(path):
         os.rename(path, new_name)
     os.makedirs(path)
 
-####################
-# metric
-####################
+
+
+
 def calculate_psnr(img1, img2):
     # img1 and img2 have range [0, 255]
     img1 = img1.astype(np.float64)

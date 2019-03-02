@@ -4,9 +4,9 @@ import torch.nn as nn
 import torchvision
 from . import block as B
 
-####################
-# Generator
-####################
+
+
+
 
 class RRDBNet(nn.Module):
     def __init__(self, in_nc, out_nc, nf, nb, gc=32, upscale=4, norm_type=None, \
@@ -35,10 +35,10 @@ class RRDBNet(nn.Module):
     def forward(self, x):
         x = self.model(x)
         return x
-####################
-# Discriminator
-####################
-# VGG style Discriminator with input size 128*128
+
+
+
+
 class Discriminator_VGG_128(nn.Module):
     def __init__(self, in_nc, base_nf, norm_type='batch', act_type='leakyrelu', mode='CNA'):
         super(Discriminator_VGG_128, self).__init__()
@@ -82,7 +82,7 @@ class Discriminator_VGG_128(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
-# Assume input range is [0, 1]
+
 class VGGFeatureExtractor(nn.Module):
     def __init__(self,
                  feature_layer=34,

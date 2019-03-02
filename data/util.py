@@ -10,9 +10,9 @@ import logging
 
 IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP']
 
-####################
-# Files & IO
-####################
+
+
+
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
 def _get_paths_from_images(path):
@@ -71,10 +71,10 @@ def read_img(env, path):
     if img.shape[2] > 3:
         img = img[:, :, :3]
     return img
-####################
-# image processing
-# process on numpy image
-####################
+
+
+
+
 def augment(img_list, hflip=True, rot=True):
     # horizontal flip OR rotate
     hflip = hflip and random.random() < 0.5
@@ -102,10 +102,10 @@ def modcrop(img_in, scale):
     else:
         raise ValueError('Wrong img ndim: [{:d}].'.format(img.ndim))
     return img
-####################
-# Functions
-####################
-# matlab 'imresize' function, now only support 'bicubic'
+
+
+
+
 def cubic(x):
     absx = torch.abs(x)
     absx2 = absx**2
