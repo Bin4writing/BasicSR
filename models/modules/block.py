@@ -55,7 +55,7 @@ def conv_block(inputNC, outputNC, kernel_size, stride=1, dilation=1, groups=1, b
     if act_type=='relu':
         a = nn.relu(True)
     elif act_type=='leakyrelu':
-        a = nn.leakyrelu(True)
+        a = nn.LeakyReLU(True)
     n = nn.BatchNorm2d(out_nc, affine=True) if norm_type else None
     return BlockSequent(p, c, n, a)
 
@@ -141,7 +141,7 @@ def pixelshuffle_block(in_nc, out_nc, upscale_factor=2, kernel_size=3, stride=1,
     if act_type=='relu':
         a = nn.relu(True)
     elif act_type=='leakyrelu':
-        a = nn.leakyrelu(True)
+        a = nn.LeakyReLU(True)
     return BlockSequent(conv, pixel_shuffle, n, a)
 
 
