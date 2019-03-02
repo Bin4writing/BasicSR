@@ -117,9 +117,6 @@ def calculate_weights_indices(in_length, out_length, scale, kernel, kernel_width
 
     indices = left.view(out_length, 1).expand(out_length, P) + torch.linspace(0, P - 1, P).view(
         1, P).expand(out_length, P)
-
-e
-
     distance_to_center = u.view(out_length, 1).expand(out_length, P) - indices
 
     if (scale < 1) and (antialiasing):
