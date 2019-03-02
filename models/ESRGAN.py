@@ -100,18 +100,6 @@ class ESRGAN():
         l_d_total.backward()
         self.optimizer_D.step()
 
-        # set log
-        if step % self.D_update_ratio == 0 and step > self.D_init_iters:
-            # G
-            if self.cri_pix:
-                self.log_dict['l_g_pix'] = l_g_pix.item()
-            if self.cri_fea:
-                self.log_dict['l_g_fea'] = l_g_fea.item()
-            self.log_dict['l_g_gan'] = l_g_gan.item()
-        # D
-        self.log_dict['l_d_real'] = l_d_real.item()
-        self.log_dict['l_d_fake'] = l_d_fake.item()
-
     def generate(self,data):
         self.var_L = data['LR'].to(self.device)
         self.netG.eval()

@@ -140,7 +140,7 @@ class TrainRunner(Runner):
 
                     # validation
                     if self.current_step % self.config['train']['val_freq'] == 0:
-                        avg_psnr = 0.0
+                        avg_ssim = 0.0
                         idx = 0
                         for val_ds in self.val_datasets:
                             for val_data in val_ds.loader:
@@ -155,22 +155,22 @@ class TrainRunner(Runner):
                                 visuals = self.model.get_current_visuals()
                                 sr_img = util.tensor2img(visuals['SR'])  # uint8
                                 gt_img = util.tensor2img(visuals['HR'])  # uint8
-                                # calculate PSNR
+                                # calculate SSIM
                                 crop_size = self.config['scale']
                                 gt_img = gt_img / 255.
                                 sr_img = sr_img / 255.
                                 cropped_sr_img = sr_img[crop_size:-crop_size, crop_size:-crop_size, :]
                                 cropped_gt_img = gt_img[crop_size:-crop_size, crop_size:-crop_size, :]
-                                avg_psnr += util.calculate_psnr(cropped_sr_img * 255, cropped_gt_img * 255)
+                                avg_ssim += util.calculate_ssim(cropped_sr_img * 255, cropped_gt_img * 255)
 
-                        avg_psnr = avg_psnr / idx
+                        avg_ssim = avg_ssim / idx
 
-                        self.log('# Validation # PSNR: {:.4e}'.format(avg_psnr))
+                        self.log('# Validation # PSNR: {:.4e}'.format(avg_ssim))
                         self.log('<epoch:{:3d}, iter:{:8,d}> psnr: {:.4e}'.format(
-                            epoch, self.current_step, avg_psnr))
+                            epoch, self.current_step, avg_ssim))
 
                         if self.config['use_tb_logger'] and 'debug' not in self.config['name']:
-                            self.tf_logger.add_scalar('psnr', avg_psnr, self.current_step)
+                            self.tf_logger.add_scalar('psnr', avg_ssim, self.current_step)
 
                     # save models and training states
                     if self.current_step % self.config['logger']['save_checkpoint_freq'] == 0:
