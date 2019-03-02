@@ -195,7 +195,6 @@ class Console(cmd.Cmd):
         self.generate_parser = argparse.ArgumentParser()
         self.generate_parser.add_argument("--count", help="set count of HR imgs to be used, default to the total", type=int)
         self.generate_parser.add_argument("--size", help="set size of a sub-crop img, default to 480", type=int)
-        self.generate_parser.add_argument("--scale", help="set ratio of HR/LR, default to 4",type=int)
 
     def do_root(self,path):
         self.dataset.root = os.path.expanduser(path)
@@ -229,8 +228,6 @@ class Console(cmd.Cmd):
         if args.size:
             conf_sub['crop_sz'] = args.size
         conf_bicLRx4 = {}
-        if args.scale:
-            conf_bicLRx4['scale'] = args.scale
         self.dataset.sub(**conf_sub).bicLRx4(**conf_bicLRx4).lmdb('sub').lmdb('lr')
     def help_generate(self):
         print('\n'.join([

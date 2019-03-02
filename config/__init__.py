@@ -41,12 +41,10 @@ class Config():
         if path: self.path = path
         with open(self.path,'r',encoding='utf-8') as f:
             self._conf.update(ordered_load(f.read()))
-        scale = self._conf['scale']
         self._conf['is_train'] = is_train
         for phase, dataset in self._conf['datasets'].items():
             phase = phase.split('_')[0]
             dataset['phase'] = phase
-            dataset['scale'] = scale
             is_lmdb = False
             if 'dataroot_HR' in dataset and dataset['dataroot_HR'] is not None:
                 dataset['dataroot_HR'] = os.path.expanduser(dataset['dataroot_HR'])
@@ -72,7 +70,6 @@ class Config():
             result_dir = os.path.join(self._conf['root'], 'results', self._conf['name'])
             self._conf['result_dir'] = result_dir
             self._conf['path']['log'] = result_dir
-        self._conf['GAN']['scale'] = scale
 
         gpu_list = ','.join(str(x) for x in self._conf['gpu_ids'])
         os.environ['CUDA_VISIBLE_DEVICES'] = gpu_list

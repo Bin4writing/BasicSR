@@ -154,7 +154,7 @@ class TrainRunner(Runner):
                                 sr_img = util.tensor2img(visuals['SR'])  # uint8
                                 gt_img = util.tensor2img(visuals['HR'])  # uint8
 
-                                crop_size = self.config['scale']
+                                crop_size = 4
                                 gt_img = gt_img / 255.
                                 sr_img = sr_img / 255.
                                 cropped_sr_img = sr_img[crop_size:-crop_size, crop_size:-crop_size, :]

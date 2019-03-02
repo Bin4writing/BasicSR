@@ -40,7 +40,7 @@ class Dataset(TorchDataset):
 
     def __getitem__(self, index):
         HR_path, LR_path = None, None
-        scale = self.cnf['scale']
+        scale = 4
         HR_size = self.cnf['HR_size']
 
         HR_path = self.paths_HR[index]

@@ -38,7 +38,7 @@ class ESRGAN():
 
         cnf_net = cnf['GAN']
         self.GAN = RRDBNet(in_nc=cnf_net['in_nc'], out_nc=cnf_net['out_nc'], nf=cnf_net['nf'],
-            nb=cnf_net['nb'], gc=cnf_net['gc'], upscale=cnf_net['scale'], norm_type=cnf_net['norm_type'],
+            nb=cnf_net['nb'], gc=cnf_net['gc'], upscale=4, norm_type=cnf_net['norm_type'],
             act_type='leakyrelu', mode=cnf_net['mode'])
 
         if cnf['is_train']:
