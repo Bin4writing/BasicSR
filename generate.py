@@ -1,6 +1,4 @@
-from config import Config 
-
-
+from config import Config
 import os
 import util as util
 from models.ESRGAN import ESRGAN
@@ -14,10 +12,10 @@ class Generator():
         self.result_dir = self.config['path']['results_root']
         self.datasets = []
 
-    @property 
+    @property
     def path(self):
         return self._path
-    @path.setter 
+    @path.setter
     def path(self,val):
         self._path = val
         self.config.load(is_train=False,path=val).setMissingNone()
@@ -67,7 +65,5 @@ class Generator():
                     save_img_path = os.path.join(ds_dir, img_name + '.png')
                 util.save_img(sr_img, save_img_path)
         return self
-
-
 if __name__ == '__main__':
     generator = Generator().prepare().run()

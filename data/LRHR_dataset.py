@@ -6,8 +6,6 @@ import torch
 import torch.utils.data.Dataset as TorchDataset
 import torch.utils.data as data
 import data.util as util
-
-
 class Dataset(TorchDataset):
 
     def __init__(self, opt):

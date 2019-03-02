@@ -50,8 +50,6 @@ class AllReduce(Function):
         results = comm.reduce_add_coalesced(inputs, ctx.target_gpus[0])
         outputs = comm.broadcast_coalesced(results, ctx.target_gpus)
         return (None,) + tuple([Variable(t) for tensors in outputs for t in tensors])
-
-
 class Reduce(Function):
     @staticmethod
     def forward(ctx, *inputs):
@@ -119,8 +117,6 @@ class DataParallelModel(DataParallel):
         modules = super(DataParallelModel, self).replicate(module, device_ids)
         execute_replication_callbacks(modules)
         return modules
-
-
 class DataParallelCriterion(DataParallel):
     """
     Calculate loss in multiple-GPUs, which balance the memory usage.
@@ -149,8 +145,6 @@ class DataParallelCriterion(DataParallel):
         #return Reduce.apply(*outputs) / len(outputs)
         #return self.gather(outputs, self.output_device).mean()
         return self.gather(outputs, self.output_device)
-
-
 def _criterion_parallel_apply(modules, inputs, targets, kwargs_tup=None, devices=None):
     assert len(modules) == len(inputs)
     assert len(targets) == len(inputs)
@@ -208,16 +202,12 @@ def _criterion_parallel_apply(modules, inputs, targets, kwargs_tup=None, devices
             raise output
         outputs.append(output)
     return outputs
-
-
 ###########################################################################
 # Adapted from Synchronized-BatchNorm-PyTorch.
 # https://github.com/vacancy/Synchronized-BatchNorm-PyTorch
 #
 class CallbackContext(object):
     pass
-
-
 def execute_replication_callbacks(modules):
     """
     Execute an replication callback `__data_parallel_replicate__` on each module created
@@ -237,8 +227,6 @@ def execute_replication_callbacks(modules):
         for j, m in enumerate(module.modules()):
             if hasattr(m, '__data_parallel_replicate__'):
                 m.__data_parallel_replicate__(ctxs[j], i)
-
-
 def patch_replication_callback(data_parallel):
     """
     Monkey-patch an existing `DataParallel` object. Add the replication callback.

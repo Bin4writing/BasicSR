@@ -16,18 +16,16 @@ import util
 from data import Dataset
 
 import yaml
-
-
 class Runner:
     def __init__(self, path,tf_log_dir='./tf_log/'):
         self.config = Config(path).load().setMissingNone()
         self._path = path
-        self._tf_logger = None 
+        self._tf_logger = None
         self.model = None
         self._tf_log_dir = tf_log_dir
 
         self.current_step = 0
-        self.start_epoch = 0 
+        self.start_epoch = 0
         self.total_epochs = 0
         self.total_iters = 0
         self.datasets = []
@@ -36,24 +34,20 @@ class Runner:
         self.resume_state = None
 
         self.checkResume()
-    
     @property
     def tf_logger(self):
         if not self._tf_logger:
             from tensorboardX import SummaryWriter
             self._tf_logger = SummaryWriter(log_dir= self._tf_log_dir + self.config['name'])
         return self._tf_logger
-    
     @property
     def path(self):
-        return self._path 
+        return self._path
 
-    @path.setter 
+    @path.setter
     def path(self,val):
         self.config.load(path=val).setMissingNone()
-        self._path = val 
-
-    
+        self._path = val
     def log(self,msg):
         print(util.get_timestamp()+': '+msg)
 
@@ -62,7 +56,6 @@ class Runner:
 
     def run(self):
         raise NotImplementedError('must implement run!')
-    
     def __str__(self):
         return 'current_step: {}, start_epoch: {}, total_epochs: {}, total_iters: {}'.format(self.current_step,self.start_epoch,self.total_epochs,self.total_iters)
 
@@ -83,7 +76,7 @@ class Runner:
         self.datasets = []
         self.val_datasets = []
         self.current_step = 0
-        self.start_epoch = 0 
+        self.start_epoch = 0
         self.total_epochs = 0
         self.total_iters = 0
         self.resume_state = None
@@ -110,7 +103,6 @@ class TrainRunner(Runner):
 
                 self.total_iters = int(self.config['train']['niter'])
                 self.total_epochs = int(math.ceil(self.total_iters / train_size))
-                
                 self.log('Total epochs needed: {:d} for iters {:,d}'.format(
                     self.total_epochs, self.total_iters))
                 self.datasets.append(ds)
@@ -130,7 +122,6 @@ class TrainRunner(Runner):
                 for data in ds.loader:
                     self.current_step += 1
                     if self.current_step > self.total_iters: break
-                    
                     self.model.update_learning_rate()
 
                     self.model.feed_data(data)
@@ -164,8 +155,6 @@ class TrainRunner(Runner):
                                 visuals = self.model.get_current_visuals()
                                 sr_img = util.tensor2img(visuals['SR'])  # uint8
                                 gt_img = util.tensor2img(visuals['HR'])  # uint8
-
-
                                 # calculate PSNR
                                 crop_size = self.config['scale']
                                 gt_img = gt_img / 255.
@@ -192,9 +181,6 @@ class TrainRunner(Runner):
         self.log('Saving the final self.model.')
         self.model.save('latest')
         self.log('End of training.')
-
-
-
 if __name__ == "__main__":
     train_runner = TrainRunner()
     train_runner.prepare()

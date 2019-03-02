@@ -20,8 +20,6 @@ class RRDBNet(nn.Module):
         rb_blocks = [B.RRDB(nf, kernel_size=3, gc=32, stride=1, bias=True, pad_type='zero', \
             norm_type=norm_type, act_type=act_type, mode='CNA') for _ in range(nb)]
         LR_conv = B.conv_block(nf, nf, kernel_size=3, norm_type=norm_type, act_type=None, mode=mode)
-
-
         upsample_block = B.upconv_blcok
 
         if upscale == 3:
@@ -37,13 +35,9 @@ class RRDBNet(nn.Module):
     def forward(self, x):
         x = self.model(x)
         return x
-
-
 ####################
 # Discriminator
 ####################
-
-
 # VGG style Discriminator with input size 128*128
 class Discriminator_VGG_128(nn.Module):
     def __init__(self, in_nc, base_nf, norm_type='batch', act_type='leakyrelu', mode='CNA'):
@@ -88,9 +82,6 @@ class Discriminator_VGG_128(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
-
-
-
 # Assume input range is [0, 1]
 class VGGFeatureExtractor(nn.Module):
     def __init__(self,

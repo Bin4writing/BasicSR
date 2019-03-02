@@ -9,8 +9,6 @@ from torch import from_numpy
 from torch.utils.data import Dataset as TorchDataset
 import torch.utils.data as data
 import data.util as util
-
-
 class Dataset(TorchDataset):
 
     def __init__(self, cnf):
@@ -29,8 +27,6 @@ class Dataset(TorchDataset):
                 len(self.paths_LR), len(self.paths_HR))
 
         self.random_scale_list = [1]
-
-    
     def createLoader(self):
         self.loader = torch_util.data.DataLoader(
             self,

@@ -1,20 +1,14 @@
 from collections import OrderedDict
 import torch
 import torch.nn as nn
-
-
 class OperateBlock(nn.Module):
     #Elementwise sum the output of a submodule to its input
     def __init__(self, submodule):
         super(OperateBlock, self).__init__()
         self.sub = submodule
-
-
     def forward(self, x):
         result = x + self.sub(x)
         return result
-
-
 def BlockSequent(*args):
     modules = []
     for module in args:
@@ -24,8 +18,6 @@ def BlockSequent(*args):
         elif isinstance(module, nn.Module):
             modules.append(module)
     return nn.Sequential(*modules)
-
-
 def conv_block(inputNC, outputNC, kernel_size, stride=1, dilation=1, groups=1, bias=True, \
                pad_type='zero', norm_type=None, act_type='relu', mode='CNA'):
 
@@ -43,8 +35,6 @@ def conv_block(inputNC, outputNC, kernel_size, stride=1, dilation=1, groups=1, b
         a = nn.LeakyReLU(True)
     n = nn.BatchNorm2d(outputNC, affine=True) if norm_type else None
     return BlockSequent(p, c, n, a)
-
-
 ####################
 # Useful blocks
 ####################
@@ -80,8 +70,6 @@ class ResidualDenseBlock_5C(nn.Module):
         x4 = self.conv4(torch.cat((x, x1, x2, x3), 1))
         x5 = self.conv5(torch.cat((x, x1, x2, x3, x4), 1))
         return x5.mul(0.2) + x
-
-
 class RRDB(nn.Module):
     '''
     Residual in Residual Dense Block
@@ -103,13 +91,9 @@ class RRDB(nn.Module):
         out = self.RDB2(out)
         out = self.RDB3(out)
         return out.mul(0.2) + x
-
-
 ####################
 # Upsampler
 ####################
-
-
 def pixelshuffle_block(in_nc, out_nc, upscale_factor=2, kernel_size=3, stride=1, bias=True, \
                         pad_type='zero', norm_type=None, act_type='relu'):
     '''
@@ -128,8 +112,6 @@ def pixelshuffle_block(in_nc, out_nc, upscale_factor=2, kernel_size=3, stride=1,
     elif act_type=='leakyrelu':
         a = nn.LeakyReLU(True)
     return BlockSequent(conv, pixel_shuffle, n, a)
-
-
 def upconv_blcok(in_nc, out_nc, upscale_factor=2, kernel_size=3, stride=1, bias=True, \
                 pad_type='zero', norm_type=None, act_type='relu', mode='nearest'):
     # Up conv

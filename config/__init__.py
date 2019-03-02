@@ -3,8 +3,6 @@ import os.path as osp
 from collections import OrderedDict
 import json
 import yaml
-
-
 def ordered_load(stream, Loader=yaml.SafeLoader, object_pairs_hook=OrderedDict):
     class OrderedLoader(Loader):
         pass
@@ -14,7 +12,7 @@ def ordered_load(stream, Loader=yaml.SafeLoader, object_pairs_hook=OrderedDict):
     OrderedLoader.add_constructor(
         yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
         construct_mapping)
-    return yaml.load(stream, OrderedLoader) 
+    return yaml.load(stream, OrderedLoader)
 
 class NoneDict(dict):
     def __missing__(self, key):
@@ -35,13 +33,10 @@ class NoneDict(dict):
             return NoneDict()
         else:
             return __recur(it)
-        
-
 class Config():
     def __init__(self, path):
         self.path = path
         self._conf = {}
-	
     def load(self,is_train=True,path=None):
         if path: self.path = path
         with open(self.path,'r',encoding='utf-8') as f:
@@ -77,8 +72,6 @@ class Config():
             results_root = os.path.join(self._conf['path']['root'], 'results', self._conf['name'])
             self._conf['path']['results_root'] = results_root
             self._conf['path']['log'] = results_root
-
-
         self._conf['network_G']['scale'] = scale
 
         gpu_list = ','.join(str(x) for x in self._conf['gpu_ids'])
@@ -122,5 +115,3 @@ class Config():
                                                         '{}_D.pth'.format(state_idx))
                 print('Set [pretrain_model_D] to ' + self._conf['path']['pretrain_model_D'])
         return self
-    
-

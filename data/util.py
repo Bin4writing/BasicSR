@@ -13,12 +13,8 @@ IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.ppm', '.PP
 ####################
 # Files & IO
 ####################
-
-
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
-
-
 def _get_paths_from_images(path):
     assert os.path.isdir(path), '{:s} is not a valid directory'.format(path)
     images = []
@@ -29,8 +25,6 @@ def _get_paths_from_images(path):
                 images.append(img_path)
     assert images, '{:s} has no valid image file'.format(path)
     return images
-
-
 def _get_paths_from_lmdb(dataroot):
     env = lmdb.open(dataroot, readonly=True, lock=False, readahead=False, meminit=False)
     keys_cache_file = os.path.join(dataroot, '_keys_cache.p')
@@ -45,8 +39,6 @@ def _get_paths_from_lmdb(dataroot):
         pickle.dump(keys, open(keys_cache_file, 'wb'))
     paths = sorted([key for key in keys if not key.endswith('.meta')])
     return env, paths
-
-
 def get_image_paths(data_type, dataroot):
     env, paths = None, None
     if dataroot is not None:
@@ -57,8 +49,6 @@ def get_image_paths(data_type, dataroot):
         else:
             raise NotImplementedError('data_type [{:s}] is not recognized.'.format(data_type))
     return env, paths
-
-
 def _read_lmdb_img(env, path):
     with env.begin(write=False) as txn:
         buf = txn.get(path.encode('ascii'))
@@ -67,8 +57,6 @@ def _read_lmdb_img(env, path):
     H, W, C = [int(s) for s in buf_meta.split(',')]
     img = img_flat.reshape(H, W, C)
     return img
-
-
 def read_img(env, path):
     # read image by cv2 or from lmdb
     # return: Numpy float32, HWC, BGR, [0,1]
@@ -83,14 +71,10 @@ def read_img(env, path):
     if img.shape[2] > 3:
         img = img[:, :, :3]
     return img
-
-
 ####################
 # image processing
 # process on numpy image
 ####################
-
-
 def augment(img_list, hflip=True, rot=True):
     # horizontal flip OR rotate
     hflip = hflip and random.random() < 0.5
@@ -104,15 +88,6 @@ def augment(img_list, hflip=True, rot=True):
         return img
 
     return [_augment(img) for img in img_list]
-
-
-
-
-
-
-
-
-
 def modcrop(img_in, scale):
     # img_in: Numpy, HWC or HW
     img = np.copy(img_in)
@@ -127,13 +102,9 @@ def modcrop(img_in, scale):
     else:
         raise ValueError('Wrong img ndim: [{:d}].'.format(img.ndim))
     return img
-
-
 ####################
 # Functions
 ####################
-
-
 # matlab 'imresize' function, now only support 'bicubic'
 def cubic(x):
     absx = torch.abs(x)
@@ -141,8 +112,6 @@ def cubic(x):
     absx3 = absx**3
     return (1.5*absx3 - 2.5*absx2 + 1) * ((absx <= 1).type_as(absx)) + \
         (-0.5*absx3 + 2.5*absx2 - 4*absx + 2) * (((absx > 1)*(absx <= 2)).type_as(absx))
-
-
 def calculate_weights_indices(in_length, out_length, scale, kernel, kernel_width, antialiasing):
     if (scale < 1) and (antialiasing):
         # Use a modified kernel to simultaneously interpolate and antialias- larger kernel width
@@ -196,8 +165,6 @@ def calculate_weights_indices(in_length, out_length, scale, kernel, kernel_width
     sym_len_e = indices.max() - in_length
     indices = indices + sym_len_s - 1
     return weights, indices, int(sym_len_s), int(sym_len_e)
-
-
 def imresize(img, scale, antialiasing=True):
     # Now the scale should be the same for H and W
     # input: img: CHW RGB [0,1]
@@ -265,8 +232,6 @@ def imresize(img, scale, antialiasing=True):
         out_2[2, :, i] = out_1_aug[2, :, idx:idx + kernel_width].mv(weights_W[i])
 
     return out_2
-
-
 def imresize_np(img, scale, antialiasing=True):
     # Now the scale should be the same for H and W
     # input: img: Numpy, HWC BGR [0,1]

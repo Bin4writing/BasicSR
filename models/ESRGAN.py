@@ -3,9 +3,6 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 from torch.optim import lr_scheduler
-
-
-
 import models.networks as networks
 
 class ESRGAN():
@@ -57,14 +54,10 @@ class ESRGAN():
             self.log_dict = OrderedDict()
             self.l_pix_w = train_opt['pixel_weight']
             self.l_fea_w = train_opt['feature_weight']
-
-
     def feed_data(self, data):
         self.var_L = data['LR'].to(self.device)
 
         self.var_H = data['HR'].to(self.device)
-
-
     def optimize_parameters(self, step):
         for p in self.netD.parameters():
             p.requires_grad = False
@@ -134,9 +127,6 @@ class ESRGAN():
 
     def get_current_log(self):
         return self.log_dict
-
-
-
     def load(self):
         load_path_G = self.opt['path']['pretrain_model_G']
         if load_path_G is not None:

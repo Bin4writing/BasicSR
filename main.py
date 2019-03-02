@@ -93,7 +93,7 @@ class Dataset:
             lmdb_save_path = self.img_sub_bicLRx4_folder + '.lmdb'
         else:
             print('type not recognized!')
-            return 
+            return
         dataset = []
         data_size = 0
 
@@ -131,12 +131,11 @@ class Dataset:
             pickle.dump(keys, open(keys_cache_file, "wb"))
         print('Finish creating lmdb keys cache.')
         return self
-    
     def sub(self,count=800,crop_sz=480):
         n_thread = 20
         step = 240
         thres_sz = 48
-        compression_level = 3  
+        compression_level = 3
         if not os.path.exists(self.img_sub_folder):
             os.makedirs(self.img_sub_folder)
             print('mkdir [{:s}] ...'.format(self.img_sub_folder))
@@ -157,8 +156,6 @@ class Dataset:
 
         def update(arg):
             return
-
-
         pool = Pool(n_thread)
         for path in img_list:
             pool.apply_async(worker,
@@ -190,10 +187,6 @@ class Dataset:
             torchvision.utils.save_image(
                 (rlt * 255).round() / 255, out_file, nrow=1, padding=0, normalize=False)
         return self
-
-
-
-
 class Console(cmd.Cmd):
     def __init__(self):
         super().__init__()
@@ -240,7 +233,6 @@ class Console(cmd.Cmd):
         if args.scale:
             conf_bicLRx4['scale'] = args.scale
         self.dataset.sub(**conf_sub).bicLRx4(**conf_bicLRx4).lmdb('sub').lmdb('lr')
-       
     def help_generate(self):
         print('\n'.join([
             'todo'
@@ -255,14 +247,13 @@ class Console(cmd.Cmd):
         path = path.strip()
         if not path:
             self.generator.prepare().run()
-        self.generator.path = path 
+        self.generator.path = path
         self.generator.clear().prepare().run()
 
     def help_recover(self):
         print('\n'.join([
             'recover HR from LR'
             ]))
-    
     def do_lmdb(self,type_str):
         type_str = type_str.strip()
         if not type_str:
@@ -304,16 +295,14 @@ class Console(cmd.Cmd):
         type_str = type_str.strip()
         if not type_str:
             self.help_run()
-            return 
-        if type_str == 'train':                
+            return
+        if type_str == 'train':
             self.runner.prepare()
             self.runner.run()
         elif type_str == 'test':
             pass
         else:
             pass
-        
-
     def help_run(self):
         print('\n'.join([
             'run <type_str>',
@@ -322,9 +311,5 @@ class Console(cmd.Cmd):
 
     def do_EOF(self, line):
         return True
-
-
 if __name__ == '__main__':
     Console().cmdloop()
-
-
