@@ -1,12 +1,4 @@
 
-
-
-
-
-
-
-
-
 """Encoding Data Parallel"""
 import threading
 import functools
@@ -36,7 +28,7 @@ class AllReduce(Function):
         ctx.target_gpus = [inputs[i].get_device() for i in range(0, len(inputs), num_inputs)]
         inputs = [inputs[i:i + num_inputs]
                  for i in range(0, len(inputs), num_inputs)]
-        # sort before reduce sum
+
         inputs = sorted(inputs, key=lambda i: i[0].get_device())
         results = comm.reduce_add_coalesced(inputs, ctx.target_gpus[0])
         outputs = comm.broadcast_coalesced(results, ctx.target_gpus)
@@ -133,8 +125,7 @@ class DataParallelCriterion(DataParallel):
         >>> loss = criterion(y, target)
     """
     def forward(self, inputs, *targets, **kwargs):
-        # input should be already scatterd
-        # scattering the targets instead
+
         if not self.device_ids:
             return self.module(inputs, *targets, **kwargs)
         targets, kwargs = self.scatter(targets, kwargs, self.device_ids)
@@ -142,8 +133,7 @@ class DataParallelCriterion(DataParallel):
             return self.module(inputs, *targets[0], **kwargs[0])
         replicas = self.replicate(self.module, self.device_ids[:len(inputs)])
         outputs = _criterion_parallel_apply(replicas, inputs, targets, kwargs)
-        #return Reduce.apply(*outputs) / len(outputs)
-        #return self.gather(outputs, self.output_device).mean()
+
         return self.gather(outputs, self.output_device)
 def _criterion_parallel_apply(modules, inputs, targets, kwargs_tup=None, devices=None):
     assert len(modules) == len(inputs)
@@ -169,7 +159,7 @@ def _criterion_parallel_apply(modules, inputs, targets, kwargs_tup=None, devices
             device = get_a_var(input).get_device()
         try:
             with torch.cuda.device(device):
-                # this also avoids accidental slicing of `input` if it is a Tensor
+
                 if not isinstance(input, (list, tuple)):
                     input = (input,)
                 if not isinstance(target, (list, tuple)):
@@ -203,8 +193,6 @@ def _criterion_parallel_apply(modules, inputs, targets, kwargs_tup=None, devices
         outputs.append(output)
     return outputs
 
-
-
 #
 class CallbackContext(object):
     pass
@@ -235,7 +223,7 @@ def patch_replication_callback(data_parallel):
         > sync_bn = SynchronizedBatchNorm1d(10, eps=1e-5, affine=False)
         > sync_bn = DataParallel(sync_bn, device_ids=[0, 1])
         > patch_replication_callback(sync_bn)
-        # this is equivalent to
+
         > sync_bn = SynchronizedBatchNorm1d(10, eps=1e-5, affine=False)
         > sync_bn = DataParallelWithCallback(sync_bn, device_ids=[0, 1])
     """

@@ -10,9 +10,6 @@ import logging
 
 IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP']
 
-
-
-
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
 def _get_paths_from_images(path):
@@ -58,8 +55,7 @@ def _read_lmdb_img(env, path):
     img = img_flat.reshape(H, W, C)
     return img
 def read_img(env, path):
-    # read image by cv2 or from lmdb
-    # return: Numpy float32, HWC, BGR, [0,1]
+
     if env is None:  # img
         img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
     else:
@@ -67,16 +63,13 @@ def read_img(env, path):
     img = img.astype(np.float32) / 255.
     if img.ndim == 2:
         img = np.expand_dims(img, axis=2)
-    # some images have 4 channels
+
     if img.shape[2] > 3:
         img = img[:, :, :3]
     return img
 
-
-
-
 def augment(img_list, hflip=True, rot=True):
-    # horizontal flip OR rotate
+
     hflip = hflip and random.random() < 0.5
     vflip = rot and random.random() < 0.5
     rot90 = rot and random.random() < 0.5
@@ -89,7 +82,7 @@ def augment(img_list, hflip=True, rot=True):
 
     return [_augment(img) for img in img_list]
 def modcrop(img_in, scale):
-    # img_in: Numpy, HWC or HW
+
     img = np.copy(img_in)
     if img.ndim == 2:
         H, W = img.shape
@@ -103,9 +96,6 @@ def modcrop(img_in, scale):
         raise ValueError('Wrong img ndim: [{:d}].'.format(img.ndim))
     return img
 
-
-
-
 def cubic(x):
     absx = torch.abs(x)
     absx2 = absx**2
@@ -114,44 +104,32 @@ def cubic(x):
         (-0.5*absx3 + 2.5*absx2 - 4*absx + 2) * (((absx > 1)*(absx <= 2)).type_as(absx))
 def calculate_weights_indices(in_length, out_length, scale, kernel, kernel_width, antialiasing):
     if (scale < 1) and (antialiasing):
-        # Use a modified kernel to simultaneously interpolate and antialias- larger kernel width
+
         kernel_width = kernel_width / scale
 
-    # Output-space coordinates
     x = torch.linspace(1, out_length, out_length)
 
-    # Input-space coordinates. Calculate the inverse mapping such that 0.5
-    # in output space maps to 0.5 in input space, and 0.5+scale in output
-    # space maps to 1.5 in input space.
     u = x / scale + 0.5 * (1 - 1 / scale)
 
-    # What is the left-most pixel that can be involved in the computation?
     left = torch.floor(u - kernel_width / 2)
 
-    # What is the maximum number of pixels that can be involved in the
-    # computation?  Note: it's OK to use an extra pixel here; if the
-    # corresponding weights are all zero, it will be eliminated at the end
-    # of this function.
     P = math.ceil(kernel_width) + 2
 
-    # The indices of the input pixels involved in computing the k-th output
-    # pixel are in row k of the indices matrix.
     indices = left.view(out_length, 1).expand(out_length, P) + torch.linspace(0, P - 1, P).view(
         1, P).expand(out_length, P)
 
-    # The weights used to compute the k-th output pixel are in row k of the
-    # weights matrix.
+e
+
     distance_to_center = u.view(out_length, 1).expand(out_length, P) - indices
-    # apply cubic kernel
+
     if (scale < 1) and (antialiasing):
         weights = scale * cubic(distance_to_center * scale)
     else:
         weights = cubic(distance_to_center)
-    # Normalize the weights matrix so that each row sums to 1.
+
     weights_sum = torch.sum(weights, 1).view(out_length, 1)
     weights = weights / weights_sum.expand(out_length, P)
 
-    # If a column in weights is all zero, get rid of it. only consider the first and last column.
     weights_zero_tmp = torch.sum((weights == 0), 0)
     if not math.isclose(weights_zero_tmp[0], 0, rel_tol=1e-6):
         indices = indices.narrow(1, 1, P - 2)
@@ -166,27 +144,17 @@ def calculate_weights_indices(in_length, out_length, scale, kernel, kernel_width
     indices = indices + sym_len_s - 1
     return weights, indices, int(sym_len_s), int(sym_len_e)
 def imresize(img, scale, antialiasing=True):
-    # Now the scale should be the same for H and W
-    # input: img: CHW RGB [0,1]
-    # output: CHW RGB [0,1] w/o round
 
     in_C, in_H, in_W = img.size()
     out_C, out_H, out_W = in_C, math.ceil(in_H * scale), math.ceil(in_W * scale)
     kernel_width = 4
     kernel = 'cubic'
 
-    # Return the desired dimension order for performing the resize.  The
-    # strategy is to perform the resize first along the dimension with the
-    # smallest scale factor.
-    # Now we do not support this.
-
-    # get weights and indices
     weights_H, indices_H, sym_len_Hs, sym_len_He = calculate_weights_indices(
         in_H, out_H, scale, kernel, kernel_width, antialiasing)
     weights_W, indices_W, sym_len_Ws, sym_len_We = calculate_weights_indices(
         in_W, out_W, scale, kernel, kernel_width, antialiasing)
-    # process H dimension
-    # symmetric copying
+
     img_aug = torch.FloatTensor(in_C, in_H + sym_len_Hs + sym_len_He, in_W)
     img_aug.narrow(1, sym_len_Hs, in_H).copy_(img)
 
@@ -208,8 +176,6 @@ def imresize(img, scale, antialiasing=True):
         out_1[1, i, :] = img_aug[1, idx:idx + kernel_width, :].transpose(0, 1).mv(weights_H[i])
         out_1[2, i, :] = img_aug[2, idx:idx + kernel_width, :].transpose(0, 1).mv(weights_H[i])
 
-    # process W dimension
-    # symmetric copying
     out_1_aug = torch.FloatTensor(in_C, out_H, in_W + sym_len_Ws + sym_len_We)
     out_1_aug.narrow(2, sym_len_Ws, in_W).copy_(out_1)
 
@@ -233,9 +199,7 @@ def imresize(img, scale, antialiasing=True):
 
     return out_2
 def imresize_np(img, scale, antialiasing=True):
-    # Now the scale should be the same for H and W
-    # input: img: Numpy, HWC BGR [0,1]
-    # output: HWC BGR [0,1] w/o round
+
     img = torch.from_numpy(img)
 
     in_H, in_W, in_C = img.size()
@@ -243,18 +207,11 @@ def imresize_np(img, scale, antialiasing=True):
     kernel_width = 4
     kernel = 'cubic'
 
-    # Return the desired dimension order for performing the resize.  The
-    # strategy is to perform the resize first along the dimension with the
-    # smallest scale factor.
-    # Now we do not support this.
-
-    # get weights and indices
     weights_H, indices_H, sym_len_Hs, sym_len_He = calculate_weights_indices(
         in_H, out_H, scale, kernel, kernel_width, antialiasing)
     weights_W, indices_W, sym_len_Ws, sym_len_We = calculate_weights_indices(
         in_W, out_W, scale, kernel, kernel_width, antialiasing)
-    # process H dimension
-    # symmetric copying
+
     img_aug = torch.FloatTensor(in_H + sym_len_Hs + sym_len_He, in_W, in_C)
     img_aug.narrow(0, sym_len_Hs, in_H).copy_(img)
 
@@ -276,8 +233,6 @@ def imresize_np(img, scale, antialiasing=True):
         out_1[i, :, 1] = img_aug[idx:idx + kernel_width, :, 1].transpose(0, 1).mv(weights_H[i])
         out_1[i, :, 2] = img_aug[idx:idx + kernel_width, :, 2].transpose(0, 1).mv(weights_H[i])
 
-    # process W dimension
-    # symmetric copying
     out_1_aug = torch.FloatTensor(out_H, in_W + sym_len_Ws + sym_len_We, in_C)
     out_1_aug.narrow(1, sym_len_Ws, in_W).copy_(out_1)
 
@@ -303,7 +258,7 @@ def imresize_np(img, scale, antialiasing=True):
     img = cv2.imread('test.png')
     img = img * 1.0 / 255
     img = torch.from_numpy(np.transpose(img[:, :, [2, 1, 0]], (2, 0, 1))).float()
-    # imresize
+
     scale = 1 / 4
     import time
     total_time = 0

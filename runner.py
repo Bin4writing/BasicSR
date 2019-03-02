@@ -127,7 +127,6 @@ class TrainRunner(Runner):
                     self.model.feed_data(data)
                     self.model.optimize_parameters(self.current_step)
 
-                    # log
                     if self.current_step % self.config['logger']['print_freq'] == 0:
                         logs = self.model.get_current_log()
                         message = '<epoch:{:3d}, iter:{:8,d}, lr:{:.3e}> '.format(
@@ -138,7 +137,6 @@ class TrainRunner(Runner):
                                 self.tf_logger.add_scalar(k, v, self.current_step)
                         self.log(message)
 
-                    # validation
                     if self.current_step % self.config['train']['val_freq'] == 0:
                         avg_ssim = 0.0
                         idx = 0
@@ -155,7 +153,7 @@ class TrainRunner(Runner):
                                 visuals = self.model.get_current_visuals()
                                 sr_img = util.tensor2img(visuals['SR'])  # uint8
                                 gt_img = util.tensor2img(visuals['HR'])  # uint8
-                                # calculate SSIM
+
                                 crop_size = self.config['scale']
                                 gt_img = gt_img / 255.
                                 sr_img = sr_img / 255.
@@ -172,7 +170,6 @@ class TrainRunner(Runner):
                         if self.config['use_tb_logger'] and 'debug' not in self.config['name']:
                             self.tf_logger.add_scalar('psnr', avg_ssim, self.current_step)
 
-                    # save models and training states
                     if self.current_step % self.config['logger']['save_checkpoint_freq'] == 0:
                         self.log('Saving models and training states.')
                         self.model.save(self.current_step)

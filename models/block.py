@@ -2,7 +2,7 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 class OperateBlock(nn.Module):
-    #Elementwise sum the output of a submodule to its input
+
     def __init__(self, submodule):
         super(OperateBlock, self).__init__()
         self.sub = submodule
@@ -35,9 +35,6 @@ def conv_block(inputNC, outputNC, kernel_size, stride=1, dilation=1, groups=1, b
         a = nn.LeakyReLU(True)
     n = nn.BatchNorm2d(outputNC, affine=True) if norm_type else None
     return BlockSequent(p, c, n, a)
-
-
-
 
 class ResidualDenseBlock_5C(nn.Module):
     def __init__(self, nc, kernel_size=3, gc=32, stride=1, bias=True, pad_type='zero', \
@@ -83,8 +80,6 @@ class RRDB(nn.Module):
         out = self.RDB3(out)
         return out.mul(0.2) + x
 
-
-
 def pixelshuffle_block(in_nc, out_nc, upscale_factor=2, kernel_size=3, stride=1, bias=True, \
                         pad_type='zero', norm_type=None, act_type='relu'):
     '''
@@ -105,8 +100,7 @@ def pixelshuffle_block(in_nc, out_nc, upscale_factor=2, kernel_size=3, stride=1,
     return BlockSequent(conv, pixel_shuffle, n, a)
 def upconv_blcok(in_nc, out_nc, upscale_factor=2, kernel_size=3, stride=1, bias=True, \
                 pad_type='zero', norm_type=None, act_type='relu', mode='nearest'):
-    # Up conv
-    # described in https://distill.pub/2016/deconv-checkerboard/
+
     upsample = nn.Upsample(scale_factor=upscale_factor, mode=mode)
     conv = conv_block(in_nc, out_nc, kernel_size, stride, bias=bias, \
                         pad_type=pad_type, norm_type=norm_type, act_type=act_type)

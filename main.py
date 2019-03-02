@@ -117,12 +117,11 @@ class Dataset:
                     H, W, C = dataset[i].shape
                 meta_key = (base_name + '.meta').encode('ascii')
                 meta = '{:d}, {:d}, {:d}'.format(H, W, C)
-                # The encode is only essential in Python 3
+
                 txn.put(key, data)
                 txn.put(meta_key, meta.encode('ascii'))
         print('Finish writing lmdb.')
 
-        # create keys cache
         keys_cache_file = os.path.join(lmdb_save_path, '_keys_cache.p')
         env = lmdb.open(lmdb_save_path, readonly=True, lock=False, readahead=False, meminit=False)
         with env.begin(write=False) as txn:

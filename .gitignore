@@ -10,7 +10,6 @@ experiments/**/*
 results/**
 tf_logger/**/*
 
-
 *.svg
 *.pyc
 *.t7
@@ -18,11 +17,9 @@ tf_logger/**/*
 *.mat
 *.npy
 
-
 *.aux
 *.bbl
 *.blg
 *.log
 *.out
 *.synctex.gz
-
