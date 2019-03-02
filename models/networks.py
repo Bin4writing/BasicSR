@@ -31,7 +31,6 @@ def weights_by(scale=1):
 
 # Generator
 def define_G(opt):
-    gpu_ids = opt['gpu_ids']
     opt_net = opt['network_G']
     netG = arch.RRDBNet(in_nc=opt_net['in_nc'], out_nc=opt_net['out_nc'], nf=opt_net['nf'],
             nb=opt_net['nb'], gc=opt_net['gc'], upscale=opt_net['scale'], norm_type=opt_net['norm_type'],
@@ -40,9 +39,8 @@ def define_G(opt):
     if opt['is_train']:
         netG.apply(weights_by(0.1))
 
-    if gpu_ids:
-        assert torch.cuda.is_available()
-        netG = nn.DataParallel(netG)
+
+    netG = nn.DataParallel(netG)
     return netG
 
 
@@ -55,19 +53,14 @@ def define_D(opt):
             norm_type=opt_net['norm_type'], mode=opt_net['mode'], act_type=opt_net['act_type'])
 
     netD.apply(weights_by(1))
-    if gpu_ids:
-        netD = nn.DataParallel(netD)
+    netD = nn.DataParallel(netD)
     return netD
 
 
 def define_F(opt):
-    gpu_ids = opt['gpu_ids']
-    device = torch.device('cuda' if gpu_ids else 'cpu')
 
-    feature_layer = 34
-    netF = arch.VGGFeatureExtractor(feature_layer=feature_layer, \
-        device=device)
-    if gpu_ids:
-        netF = nn.DataParallel(netF)
+    netF = arch.VGGFeatureExtractor(feature_layer=34, \
+        device=torch.device('cuda'))
+    netF = nn.DataParallel(netF)
     netF.eval()  # No need to train
     return netF

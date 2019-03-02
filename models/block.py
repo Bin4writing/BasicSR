@@ -2,21 +2,6 @@ from collections import OrderedDict
 import torch
 import torch.nn as nn
 
-####################
-# Basic blocks
-####################
-
-
-
-
-
-
-
-
-
-
-
-
 
 class OperateBlock(nn.Module):
     #Elementwise sum the output of a submodule to its input
