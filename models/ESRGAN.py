@@ -47,10 +47,10 @@ class ESRGAN():
         self.netG = nn.DataParallel(self.netG).to(self.device)
         if self.is_train:
             opt_net = opt['network_D']
-            netD =Discriminator_VGG_128(in_nc=opt_net['in_nc'], base_nf=opt_net['nf'], \
+            self.netD =Discriminator_VGG_128(in_nc=opt_net['in_nc'], base_nf=opt_net['nf'], \
                 norm_type=opt_net['norm_type'], mode=opt_net['mode'], act_type=opt_net['act_type'])
-            netD.apply(weights_by(1))
-            netD = nn.DataParallel(self.netD).to(self.device)
+            self.netD.apply(weights_by(1))
+            self.netD = nn.DataParallel(self.netD).to(self.device)
             self.netG.train()
             self.netD.train()
         self.load()  # load G and D if needed
