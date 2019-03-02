@@ -94,7 +94,7 @@ class ESRGAN():
         self.optimizer_G.zero_grad()
 
         self.fake_H = self.GAN(self.var_L)
-        minibatch = self.self.cnf['minibatch']
+        minibatch = self.cnf['minibatch']
         l_g_total = 0
         if step % self.D_update_ratio == 0 and step > self.D_init_iters:
             l_g_pix = self.w_pix * self.cri_pix(self.fake_H, self.var_H)
