@@ -38,7 +38,7 @@ class ESRGAN():
         self.train_opt = train_opt
         # define networks and load pretrained models
         opt_net = opt['network_G']
-        self.netG = arch.RRDBNet(in_nc=opt_net['in_nc'], out_nc=opt_net['out_nc'], nf=opt_net['nf'],
+        self.netG = RRDBNet(in_nc=opt_net['in_nc'], out_nc=opt_net['out_nc'], nf=opt_net['nf'],
             nb=opt_net['nb'], gc=opt_net['gc'], upscale=opt_net['scale'], norm_type=opt_net['norm_type'],
             act_type='leakyrelu', mode=opt_net['mode'])
 
@@ -47,7 +47,7 @@ class ESRGAN():
         self.netG = nn.DataParallel(self.netG).to(self.device)
         if self.is_train:
             opt_net = opt['network_D']
-            netD = arch.Discriminator_VGG_128(in_nc=opt_net['in_nc'], base_nf=opt_net['nf'], \
+            netD =Discriminator_VGG_128(in_nc=opt_net['in_nc'], base_nf=opt_net['nf'], \
                 norm_type=opt_net['norm_type'], mode=opt_net['mode'], act_type=opt_net['act_type'])
             netD.apply(weights_by(1))
             netD = nn.DataParallel(self.netD).to(self.device)
@@ -59,7 +59,7 @@ class ESRGAN():
         if self.is_train:
             self.cri_pix = nn.L1Loss().to(self.device)
             self.cri_fea = nn.L1Loss().to(self.device)
-            self.netF = arch.VGGFeatureExtractor(feature_layer=34, \
+            self.netF = VGGFeatureExtractor(feature_layer=34, \
                 device=self.device)
             self.netF = nn.DataParallel(self.netF)
             self.netF.eval()
