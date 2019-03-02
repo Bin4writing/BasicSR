@@ -2,7 +2,7 @@ import functools
 import torch
 import torch.nn as nn
 from torch.nn import init
-import models.modules.architecture as arch
+import models.architecture as arch
 
 
 def weights_by(scale=1):
