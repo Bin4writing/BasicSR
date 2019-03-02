@@ -35,7 +35,7 @@ def define_G(opt):
     opt_net = opt['network_G']
     netG = arch.RRDBNet(in_nc=opt_net['in_nc'], out_nc=opt_net['out_nc'], nf=opt_net['nf'],
             nb=opt_net['nb'], gc=opt_net['gc'], upscale=opt_net['scale'], norm_type=opt_net['norm_type'],
-            act_type='leakyrelu', mode=opt_net['mode'], upsample_mode='upconv')
+            act_type='leakyrelu', mode=opt_net['mode'])
 
     if opt['is_train']:
         netG.apply(weights_by(0.1))
@@ -60,15 +60,13 @@ def define_D(opt):
     return netD
 
 
-def define_F(opt, use_bn=False):
+def define_F(opt):
     gpu_ids = opt['gpu_ids']
     device = torch.device('cuda' if gpu_ids else 'cpu')
-    if use_bn:
-        feature_layer = 49
-    else:
-        feature_layer = 34
-    netF = arch.VGGFeatureExtractor(feature_layer=feature_layer, use_bn=use_bn, \
-        use_input_norm=True, device=device)
+
+    feature_layer = 34
+    netF = arch.VGGFeatureExtractor(feature_layer=feature_layer, \
+        device=device)
     if gpu_ids:
         netF = nn.DataParallel(netF)
     netF.eval()  # No need to train

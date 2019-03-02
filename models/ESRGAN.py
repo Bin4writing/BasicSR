@@ -30,7 +30,7 @@ class ESRGAN():
         if self.is_train:
             self.cri_pix = nn.L1Loss().to(self.device)
             self.cri_fea = nn.L1Loss().to(self.device)
-            self.netF = networks.define_F(opt, use_bn=False).to(self.device)
+            self.netF = networks.define_F(opt).to(self.device)
             self.cri_gan = nn.BCEWithLogitsLoss().to(self.device)
             self.l_gan_w = train_opt['gan_weight']
             self.D_update_ratio = train_opt['D_update_ratio'] if train_opt['D_update_ratio'] else 1
@@ -53,7 +53,7 @@ class ESRGAN():
             for optimizer in self.optimizers:
                 self.schedulers.append(lr_scheduler.MultiStepLR(optimizer, \
                     train_opt['lr_steps'], train_opt['lr_gamma']))
-        
+
             self.log_dict = OrderedDict()
             self.l_pix_w = train_opt['pixel_weight']
             self.l_fea_w = train_opt['feature_weight']
@@ -80,13 +80,13 @@ class ESRGAN():
             real_fea = self.netF(self.var_H).detach()
             fake_fea = self.netF(self.fake_H)
             l_g_fea = self.l_fea_w*self.cri_fea(fake_fea,real_fea)
-            
+
             # G gan + cls loss
             d_fake = self.netD(self.fake_H)
             d_real = self.netD(self.var_H).detach()
 
             l_g_gan = self.l_gan_w * (self.cri_gan(d_real - torch.mean(d_fake), torch.zeros_like(d_real)) +
-                                      self.cri_gan(d_fake - torch.mean(d_real), torch.ones_like(d_fake))) / 2 
+                                      self.cri_gan(d_fake - torch.mean(d_real), torch.ones_like(d_fake))) / 2
             l_g_total += l_g_gan
             l_g_total.backward()
             self.optimizer_G.step()

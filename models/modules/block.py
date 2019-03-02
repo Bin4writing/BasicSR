@@ -7,50 +7,30 @@ import torch.nn as nn
 ####################
 
 
-def act(act_type, inplace=True, neg_slope=0.2, n_prelu=1):
-    if act_type=='relu':
-        return nn.ReLU(inplace)
-    return nn.LeakyReLU(neg_slope, inplace)
-
-def norm(norm_type, nc):
-    return nn.BatchNorm2d(nc, affine=True)
-
-
-def pad(pad_type, padding):
-    return None
-
-
-def get_valid_padding(kernel_size, dilation):
-    kernel_size = kernel_size + (kernel_size - 1) * (dilation - 1)
-    padding = (kernel_size - 1) // 2
-    return padding
-
-
-class ConcatBlock(nn.Module):
-    # Concat the output of a submodule to its input
-    def __init__(self, submodule):
-        super(ConcatBlock, self).__init__()
-        self.sub = submodule
-
-    def forward(self, x):
-        output = torch.cat((x, self.sub(x)), dim=1)
-        return output
 
 
 
 
-class ShortcutBlock(nn.Module):
+
+
+
+
+
+
+
+class OperateBlock(nn.Module):
     #Elementwise sum the output of a submodule to its input
     def __init__(self, submodule):
-        super(ShortcutBlock, self).__init__()
+        super(OperateBlock, self).__init__()
         self.sub = submodule
 
+
     def forward(self, x):
-        output = x + self.sub(x)
-        return output
+        result = x + self.sub(x)
+        return result
 
 
-def sequential(*args):
+def BlockSequent(*args):
     modules = []
     for module in args:
         if isinstance(module, nn.Sequential):
@@ -61,56 +41,28 @@ def sequential(*args):
     return nn.Sequential(*modules)
 
 
-def conv_block(in_nc, out_nc, kernel_size, stride=1, dilation=1, groups=1, bias=True, \
+def conv_block(inputNC, outputNC, kernel_size, stride=1, dilation=1, groups=1, bias=True, \
                pad_type='zero', norm_type=None, act_type='relu', mode='CNA'):
-    padding = get_valid_padding(kernel_size, dilation)
-    p = pad(pad_type, padding) if pad_type and pad_type != 'zero' else None
+
+    kernel_size_t = kernel_size + (kernel_size - 1) * (dilation - 1)
+    padding = (kernel_size_t - 1) // 2
+    p = None if pad_type and pad_type != 'zero' else None
     padding = padding if pad_type == 'zero' else 0
 
-    c = nn.Conv2d(in_nc, out_nc, kernel_size=kernel_size, stride=stride, padding=padding, \
+    c = nn.Conv2d(inputNC, outputNC, kernel_size=kernel_size, stride=stride, padding=padding, \
             dilation=dilation, bias=bias, groups=groups)
-    a = act(act_type) if act_type else None
-    n = norm(norm_type, out_nc) if norm_type else None
-    return sequential(p, c, n, a)
+    a = None
+    if act_type=='relu':
+        a = nn.relu(True)
+    elif act_type=='leakyrelu':
+        a = nn.leakyrelu(True)
+    n = nn.BatchNorm2d(out_nc, affine=True) if norm_type else None
+    return BlockSequent(p, c, n, a)
 
 
 ####################
 # Useful blocks
 ####################
-
-
-class ResNetBlock(nn.Module):
-    '''
-    ResNet Block, 3-3 style
-    with extra residual scaling used in EDSR
-    (Enhanced Deep Residual Networks for Single Image Super-Resolution, CVPRW 17)
-    '''
-
-    def __init__(self, in_nc, mid_nc, out_nc, kernel_size=3, stride=1, dilation=1, groups=1, \
-            bias=True, pad_type='zero', norm_type=None, act_type='relu', mode='CNA', res_scale=1):
-        super(ResNetBlock, self).__init__()
-        conv0 = conv_block(in_nc, mid_nc, kernel_size, stride, dilation, groups, bias, pad_type, \
-            norm_type, act_type, mode)
-        if mode == 'CNA':
-            act_type = None
-        if mode == 'CNAC':  # Residual path: |-CNAC-|
-            act_type = None
-            norm_type = None
-        conv1 = conv_block(mid_nc, out_nc, kernel_size, stride, dilation, groups, bias, pad_type, \
-            norm_type, act_type, mode)
-        # if in_nc != out_nc:
-        #     self.project = conv_block(in_nc, out_nc, 1, stride, dilation, 1, bias, pad_type, \
-        #         None, None)
-        #     print('Need a projecter in ResNetBlock.')
-        # else:
-        #     self.project = lambda x:x
-        self.res = sequential(conv0, conv1)
-        self.res_scale = res_scale
-
-    def forward(self, x):
-        res = self.res(x).mul(self.res_scale)
-        return x + res
-
 
 class ResidualDenseBlock_5C(nn.Module):
     '''
@@ -131,10 +83,8 @@ class ResidualDenseBlock_5C(nn.Module):
             norm_type=norm_type, act_type=act_type, mode=mode)
         self.conv4 = conv_block(nc+3*gc, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
             norm_type=norm_type, act_type=act_type, mode=mode)
-        if mode == 'CNA':
-            last_act = None
-        else:
-            last_act = act_type
+
+        last_act = None
         self.conv5 = conv_block(nc+4*gc, nc, 3, stride, bias=bias, pad_type=pad_type, \
             norm_type=norm_type, act_type=last_act, mode=mode)
 
@@ -186,9 +136,13 @@ def pixelshuffle_block(in_nc, out_nc, upscale_factor=2, kernel_size=3, stride=1,
                         pad_type=pad_type, norm_type=None, act_type=None)
     pixel_shuffle = nn.PixelShuffle(upscale_factor)
 
-    n = norm(norm_type, out_nc) if norm_type else None
-    a = act(act_type) if act_type else None
-    return sequential(conv, pixel_shuffle, n, a)
+    n = nn.BatchNorm2d(out_nc, affine=True) if norm_type else None
+    a = None
+    if act_type=='relu':
+        a = nn.relu(True)
+    elif act_type=='leakyrelu':
+        a = nn.leakyrelu(True)
+    return BlockSequent(conv, pixel_shuffle, n, a)
 
 
 def upconv_blcok(in_nc, out_nc, upscale_factor=2, kernel_size=3, stride=1, bias=True, \
@@ -198,4 +152,4 @@ def upconv_blcok(in_nc, out_nc, upscale_factor=2, kernel_size=3, stride=1, bias=
     upsample = nn.Upsample(scale_factor=upscale_factor, mode=mode)
     conv = conv_block(in_nc, out_nc, kernel_size, stride, bias=bias, \
                         pad_type=pad_type, norm_type=norm_type, act_type=act_type)
-    return sequential(upsample, conv)
+    return BlockSequent(upsample, conv)
