@@ -19,7 +19,7 @@ def BlockSequent(*args):
             modules.append(module)
     return nn.Sequential(*modules)
 def conv_block(inputNC, outputNC, kernel_size, stride=1, dilation=1, groups=1, bias=True, \
-               pad_type='zero', norm_type=None, act_type='relu', mode='CNA'):
+               pad_type='zero', norm_type=None, activation='relu', mode='CNA'):
 
     kernel_size_t = kernel_size + (kernel_size - 1) * (dilation - 1)
     padding = (kernel_size_t - 1) // 2
@@ -29,27 +29,27 @@ def conv_block(inputNC, outputNC, kernel_size, stride=1, dilation=1, groups=1, b
     c = nn.Conv2d(inputNC, outputNC, kernel_size=kernel_size, stride=stride, padding=padding, \
             dilation=dilation, bias=bias, groups=groups)
     a = None
-    if act_type=='relu':
+    if activation=='relu':
         a = nn.relu(True)
-    elif act_type=='leakyrelu':
+    elif activation=='leakyrelu':
         a = nn.LeakyReLU(True)
     n = nn.BatchNorm2d(outputNC, affine=True) if norm_type else None
     return BlockSequent(p, c, n, a)
 
 class ResidualDenseBlock_5C(nn.Module):
     def __init__(self, nc, kernel_size=3, gc=32, stride=1, bias=True, pad_type='zero', \
-            norm_type=None, act_type='leakyrelu', mode='CNA'):
+            norm_type=None, activation='leakyrelu', mode='CNA'):
         super(ResidualDenseBlock_5C, self).__init__()
         self.conv1 = conv_block(nc, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
-            norm_type=norm_type, act_type=act_type, mode=mode)
+            norm_type=norm_type, activation=activation, mode=mode)
         self.conv2 = conv_block(nc+gc, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
-            norm_type=norm_type, act_type=act_type, mode=mode)
+            norm_type=norm_type, activation=activation, mode=mode)
         self.conv3 = conv_block(nc+2*gc, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
-            norm_type=norm_type, act_type=act_type, mode=mode)
+            norm_type=norm_type, activation=activation, mode=mode)
         self.conv4 = conv_block(nc+3*gc, gc, kernel_size, stride, bias=bias, pad_type=pad_type, \
-            norm_type=norm_type, act_type=act_type, mode=mode)
+            norm_type=norm_type, activation=activation, mode=mode)
         self.conv5 = conv_block(nc+4*gc, nc, 3, stride, bias=bias, pad_type=pad_type, \
-            norm_type=norm_type, act_type=None, mode=mode)
+            norm_type=norm_type, activation=None, mode=mode)
 
     def forward(self, x):
         x1 = self.conv1(x)
@@ -60,14 +60,14 @@ class ResidualDenseBlock_5C(nn.Module):
         return x5.mul(0.2) + x
 class RRDB(nn.Module):
     def __init__(self, nc, kernel_size=3, gc=32, stride=1, bias=True, pad_type='zero', \
-            norm_type=None, act_type='leakyrelu', mode='CNA'):
+            norm_type=None, activation='leakyrelu', mode='CNA'):
         super(RRDB, self).__init__()
         self.RDB1 = ResidualDenseBlock_5C(nc, kernel_size, gc, stride, bias, pad_type, \
-            norm_type, act_type, mode)
+            norm_type, activation, mode)
         self.RDB2 = ResidualDenseBlock_5C(nc, kernel_size, gc, stride, bias, pad_type, \
-            norm_type, act_type, mode)
+            norm_type, activation, mode)
         self.RDB3 = ResidualDenseBlock_5C(nc, kernel_size, gc, stride, bias, pad_type, \
-            norm_type, act_type, mode)
+            norm_type, activation, mode)
 
     def forward(self, x):
         out = self.RDB1(x)
@@ -76,22 +76,22 @@ class RRDB(nn.Module):
         return out.mul(0.2) + x
 
 def pixelshuffle_block(in_nc, out_nc, upscale_factor=2, kernel_size=3, stride=1, bias=True, \
-                        pad_type='zero', norm_type=None, act_type='relu'):
+                        pad_type='zero', norm_type=None, activation='relu'):
     conv = conv_block(in_nc, out_nc * (upscale_factor ** 2), kernel_size, stride, bias=bias, \
-                        pad_type=pad_type, norm_type=None, act_type=None)
+                        pad_type=pad_type, norm_type=None, activation=None)
     pixel_shuffle = nn.PixelShuffle(upscale_factor)
 
     n = nn.BatchNorm2d(out_nc, affine=True) if norm_type else None
     a = None
-    if act_type=='relu':
+    if activation=='relu':
         a = nn.relu(True)
-    elif act_type=='leakyrelu':
+    elif activation=='leakyrelu':
         a = nn.LeakyReLU(True)
     return BlockSequent(conv, pixel_shuffle, n, a)
 def upconv_blcok(in_nc, out_nc, upscale_factor=2, kernel_size=3, stride=1, bias=True, \
-                pad_type='zero', norm_type=None, act_type='relu', mode='nearest'):
+                pad_type='zero', norm_type=None, activation='relu', mode='nearest'):
 
     upsample = nn.Upsample(scale_factor=upscale_factor, mode=mode)
     conv = conv_block(in_nc, out_nc, kernel_size, stride, bias=bias, \
-                        pad_type=pad_type, norm_type=norm_type, act_type=act_type)
+                        pad_type=pad_type, norm_type=norm_type, activation=activation)
     return BlockSequent(upsample, conv)

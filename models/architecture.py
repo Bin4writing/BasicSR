@@ -6,24 +6,24 @@ from . import block as B
 
 class RRDBNet(nn.Module):
     def __init__(self, in_nc, out_nc, nf, nb, gc=32, upscale=4, norm_type=None, \
-            act_type='leakyrelu', mode='CNA'):
+            activation='leakyrelu', mode='CNA'):
         super(RRDBNet, self).__init__()
         n_upscale = int(math.log(upscale, 2))
         if upscale == 3:
             n_upscale = 1
 
-        fea_conv = B.conv_block(in_nc, nf, kernel_size=3, norm_type=None, act_type=None)
+        fea_conv = B.conv_block(in_nc, nf, kernel_size=3, norm_type=None, activation=None)
         rb_blocks = [B.RRDB(nf, kernel_size=3, gc=32, stride=1, bias=True, pad_type='zero', \
-            norm_type=norm_type, act_type=act_type, mode='CNA') for _ in range(nb)]
-        LR_conv = B.conv_block(nf, nf, kernel_size=3, norm_type=norm_type, act_type=None, mode=mode)
+            norm_type=norm_type, activation=activation, mode='CNA') for _ in range(nb)]
+        LR_conv = B.conv_block(nf, nf, kernel_size=3, norm_type=norm_type, activation=None, mode=mode)
         upsample_block = B.upconv_blcok
 
         if upscale == 3:
-            upsampler = upsample_block(nf, nf, 3, act_type=act_type)
+            upsampler = upsample_block(nf, nf, 3, activation=activation)
         else:
-            upsampler = [upsample_block(nf, nf, act_type=act_type) for _ in range(n_upscale)]
-        HR_conv0 = B.conv_block(nf, nf, kernel_size=3, norm_type=None, act_type=act_type)
-        HR_conv1 = B.conv_block(nf, out_nc, kernel_size=3, norm_type=None, act_type=None)
+            upsampler = [upsample_block(nf, nf, activation=activation) for _ in range(n_upscale)]
+        HR_conv0 = B.conv_block(nf, nf, kernel_size=3, norm_type=None, activation=activation)
+        HR_conv1 = B.conv_block(nf, out_nc, kernel_size=3, norm_type=None, activation=None)
 
         self.model = B.BlockSequent(fea_conv, B.OperateBlock(B.BlockSequent(*rb_blocks, LR_conv)),\
             *upsampler, HR_conv0, HR_conv1)
@@ -33,33 +33,33 @@ class RRDBNet(nn.Module):
         return x
 
 class Discriminator_VGG_128(nn.Module):
-    def __init__(self, in_nc, base_nf, norm_type='batch', act_type='leakyrelu', mode='CNA'):
+    def __init__(self, in_nc, base_nf, norm_type='batch', activation='leakyrelu', mode='CNA'):
         super(Discriminator_VGG_128, self).__init__()
 
-        conv0 = B.conv_block(in_nc, base_nf, kernel_size=3, norm_type=None, act_type=act_type, \
+        conv0 = B.conv_block(in_nc, base_nf, kernel_size=3, norm_type=None, activation=activation, \
             mode=mode)
         conv1 = B.conv_block(base_nf, base_nf, kernel_size=4, stride=2, norm_type=norm_type, \
-            act_type=act_type, mode=mode)
+            activation=activation, mode=mode)
 
         conv2 = B.conv_block(base_nf, base_nf*2, kernel_size=3, stride=1, norm_type=norm_type, \
-            act_type=act_type, mode=mode)
+            activation=activation, mode=mode)
         conv3 = B.conv_block(base_nf*2, base_nf*2, kernel_size=4, stride=2, norm_type=norm_type, \
-            act_type=act_type, mode=mode)
+            activation=activation, mode=mode)
 
         conv4 = B.conv_block(base_nf*2, base_nf*4, kernel_size=3, stride=1, norm_type=norm_type, \
-            act_type=act_type, mode=mode)
+            activation=activation, mode=mode)
         conv5 = B.conv_block(base_nf*4, base_nf*4, kernel_size=4, stride=2, norm_type=norm_type, \
-            act_type=act_type, mode=mode)
+            activation=activation, mode=mode)
 
         conv6 = B.conv_block(base_nf*4, base_nf*8, kernel_size=3, stride=1, norm_type=norm_type, \
-            act_type=act_type, mode=mode)
+            activation=activation, mode=mode)
         conv7 = B.conv_block(base_nf*8, base_nf*8, kernel_size=4, stride=2, norm_type=norm_type, \
-            act_type=act_type, mode=mode)
+            activation=activation, mode=mode)
 
         conv8 = B.conv_block(base_nf*8, base_nf*8, kernel_size=3, stride=1, norm_type=norm_type, \
-            act_type=act_type, mode=mode)
+            activation=activation, mode=mode)
         conv9 = B.conv_block(base_nf*8, base_nf*8, kernel_size=4, stride=2, norm_type=norm_type, \
-            act_type=act_type, mode=mode)
+            activation=activation, mode=mode)
 
         self.features = B.BlockSequent(conv0, conv1, conv2, conv3, conv4, conv5, conv6, conv7, conv8,\
             conv9)
